@@ -9,12 +9,15 @@ cache:
 
 before_script:
   - python --version && pip --version
+  - python -m venv venv
+  - source venv/bin/activate
   - pip install --upgrade pip
   - pip install -r requirements.txt
   - pip install coverage
 
 test:
   script:
+    - source venv/bin/activate
     - coverage run tests.py
     - coverage report
   rules:
