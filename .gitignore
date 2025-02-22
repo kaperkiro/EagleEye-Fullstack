@@ -1,0 +1,61 @@
+# Python-specific
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+*.venv/
+
+# Logs and temporary files
+*.log
+*.log.*
+*.tmp
+*.bak
+
+# Database files
+*.db
+*.sqlite3
+database.db  # Your specific SQLite database
+
+# Video frame storage
+frames/
+*.jpg
+*.jpeg
+*.png
+*.mp4
+
+# IDE and editor files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Dependency management
+Pipfile.lock
+requirements.txt.lock
+
+# Mosquitto config (if you don't want to track it)
+# mosquitto.conf
+
+# Miscellaneous
+*.swp
+*.swo
+*.out
+core
+frames
+test

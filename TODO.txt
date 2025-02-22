@@ -1,0 +1,3 @@
+- Fixa hårdkodad camera id i mqtt_client.py
+- Fixa rtsp lagg (Man kan se att rtsp streamen faller efter då objektidentifieringen "ser spökobjekt".)
+- Se över databasen och dess hantering.
