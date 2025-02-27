@@ -8,6 +8,7 @@ import time
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+TIME_TO_UPDATE_THUMBNAIL = 30  # seconds
 
 class RtspStream:
     def __init__(self, camera_id: int, rtsp_url: str, mqtt_client, db: Database):
@@ -104,6 +105,20 @@ class RtspStream:
         
         return frame
     
+    def _frame_to_bytes(self, frame: np.ndarray) -> bytes:
+        """Convert a frame to JPEG bytes."""
+        try:
+            # Resize frame to a smaller thumbnail size (e.g., 320x240)
+            thumbnail = cv2.resize(frame, (320, 240), interpolation=cv2.INTER_AREA)
+            # Encode as JPEG
+            ret, buffer = cv2.imencode('.jpg', thumbnail)
+            if not ret:
+                raise Exception("Failed to encode frame to JPEG")
+            return buffer.tobytes()
+        except Exception as e:
+            logger.error(f"Error converting frame to bytes for camera {self.camera_id}: {str(e)}")
+            return b''
+    
     def run(self) -> None:
         frame_count = 0
         while True:
@@ -125,8 +140,12 @@ class RtspStream:
                 cv2.imshow(self.window_name, frame_with_detections)
                 logger.debug(f"Displayed frame {frame_count} for camera {self.camera_id}")
                 
-                # if frame_count % 30 == 0: # Save frame every 30 frames
-                #     self.db.save_frame(self.camera_id, frame, self.mqtt_client.get_detections(self.camera_id))
+                # Save thumbnail every 30 sec (900 frames at 30 fps)
+                if frame_count % 900 == 0:
+                    thumbnail_bytes = self._frame_to_bytes(frame_with_detections)
+                    if thumbnail_bytes:
+                        self.db.update_camera_thumbnail(self.camera_id, thumbnail_bytes)
+                        logger.info(f"Saved thumbnail as bytes for camera {self.camera_id}")
                 
                 frame_count += 1
                 key = cv2.waitKey(1) & 0xFF

@@ -2,6 +2,9 @@ import sqlite3
 from datetime import datetime, timedelta
 import os
 import cv2
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Database:
     def __init__(self, db_path="database.db"):
@@ -16,7 +19,8 @@ class Database:
                 NAME TEXT NOT NULL,
                 LOCATION TEXT NOT NULL,
                 IP TEXT NOT NULL,
-                RTSPURL TEXT NOT NULL)''')
+                RTSPURL TEXT NOT NULL,
+                THUMBNAIL BLOB)''')
             
             cursor.execute('''CREATE TABLE IF NOT EXISTS Videoframe (
                 ID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,6 +55,19 @@ class Database:
                 COLOR TEXT NOT NULL,
                 FOREIGN KEY (ID) REFERENCES DetectedObject(ID))''')
             conn.commit()
+
+    def update_camera_thumbnail(self, camera_id: int, thumbnail_bytes: bytes) -> None:
+        """Update the thumbnail for a given camera ID with byte data."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("UPDATE Camera SET THUMBNAIL = ? WHERE ID = ?",
+                              (thumbnail_bytes, camera_id))
+                conn.commit()
+                if cursor.rowcount == 0:
+                    logger.warning(f"No camera found with ID {camera_id} to update thumbnail")
+        except Exception as e:
+            logger.error(f"Error updating thumbnail for camera {camera_id}: {str(e)}")
 
     def add_camera(self, name: str, location: str, ip: str, rtsp_url: str) -> int:
         with sqlite3.connect(self.db_path) as conn:
