@@ -14,6 +14,7 @@ class Database:
     def _init_db(self):
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
+            # Existing tables
             cursor.execute('''CREATE TABLE IF NOT EXISTS Camera (
                 ID INTEGER PRIMARY KEY AUTOINCREMENT,
                 NAME TEXT NOT NULL,
@@ -54,10 +55,40 @@ class Database:
                 VEHICLETYPE TEXT NOT NULL,
                 COLOR TEXT NOT NULL,
                 FOREIGN KEY (ID) REFERENCES DetectedObject(ID))''')
+
+            cursor.execute('''CREATE TABLE IF NOT EXISTS Users (
+                ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                USERNAME TEXT UNIQUE NOT NULL,
+                PASSWORD TEXT NOT NULL)''')
+            
+            cursor.execute('''CREATE TABLE IF NOT EXISTS CameraPositions (
+                CAMERAID INTEGER PRIMARY KEY,
+                X REAL NOT NULL,
+                Y REAL NOT NULL,
+                FOREIGN KEY (CAMERAID) REFERENCES Camera(ID))''')
+            
+            # Insert a test user (plain text for simplicity; use hashing in production)
+            try:
+                cursor.execute("INSERT INTO Users (USERNAME, PASSWORD) VALUES (?, ?)",
+                              ('testuser', 'testpass'))
+                conn.commit()
+            except sqlite3.IntegrityError:
+                pass  # User already exists
+
+            
+            # Add test cameras
+            for i in range(1, 4):
+                # try:
+                cursor.execute("INSERT INTO Camera (NAME, LOCATION, IP, RTSPURL) VALUES (?, ?, ?, ?)",
+                            (f"Camera {i}", f"Location {i}", f"192.168.1.{i}", f"rtsp://192.168.1.{i}/stream"))
+                    # conn.commit()
+                # except sqlite3.IntegrityError:
+                #     pass
+
             conn.commit()
 
+    # Existing methods (unchanged)
     def update_camera_thumbnail(self, camera_id: int, thumbnail_bytes: bytes) -> None:
-        """Update the thumbnail for a given camera ID with byte data."""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
@@ -89,7 +120,7 @@ class Database:
 
     def save_frame(self, camera_id, frame, detections):
         timestamp = datetime.now()
-        ttl = timestamp + timedelta(minutes=30)  # Example TTL
+        ttl = timestamp + timedelta(minutes=30)
         filepath = f"frames/frame_{timestamp.strftime('%Y%m%d_%H%M%S')}_{camera_id}.jpg"
         os.makedirs("frames", exist_ok=True)
         cv2.imwrite(filepath, frame)
@@ -129,3 +160,41 @@ class Database:
         score = class_info.get("score", 0.0)
         cursor.execute("INSERT INTO Vehicle (ID, SCORE, VEHICLETYPE, COLOR) VALUES (?, ?, ?, ?)",
                       (obj_id, score, "Car", color))
+
+    def verify_user(self, username: str, password: str) -> bool:
+        """Verify if the username and password match a record in the Users table."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Users WHERE USERNAME = ? AND PASSWORD = ?",
+                          (username, password))
+            user = cursor.fetchone()
+            return user is not None
+        
+    def save_camera_position(self, camera_id: int, x: float, y: float):
+        """Save or update a camera's position on the map."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("REPLACE INTO CameraPositions (CAMERAID, X, Y) VALUES (?, ?, ?)",
+                          (camera_id, x, y))
+            conn.commit()
+            logger.debug(f"Saved position for camera {camera_id}: ({x}, {y})")
+
+    def delete_camera_position(self, camera_id: int):
+        """Delete a camera's position from the map."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM CameraPositions WHERE CAMERAID = ?", (camera_id,))
+            conn.commit()
+            logger.debug(f"Deleted position for camera {camera_id}")
+
+    def get_camera_positions(self):
+        """Retrieve all camera positions."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT CAMERAID, X, Y FROM CameraPositions")
+            return {row[0]: {'x': row[1], 'y': row[2]} for row in cursor.fetchall()}
+
+if __name__ == "__main__":
+    # Test the database initialization
+    db = Database()
+    print("Database initialized. Test user: 'testuser', 'testpass'")
