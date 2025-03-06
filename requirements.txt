@@ -1,0 +1,4 @@
+mosquitto
+opencv-python
+flask
+paho-mqtt
