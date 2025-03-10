@@ -22,12 +22,7 @@ class Application:
     def _start_stream(self, camera_id: int, rtsp_url: str):
         logger.info(f"Starting stream for camera {camera_id} at {rtsp_url}")
         stream = RtspStream(camera_id, rtsp_url, self.mqtt_client, self.db)
-        self.streams[camera_id] = stream
-        if stream.connect():
-            Thread(target=stream.run, daemon=True).start()
-            logger.info(f"Started stream for camera: {camera_id}")
-        else:
-            logger.warning(f"Failed to connect stream for camera {camera_id}, will retry in discovery")
+        stream.run()
 
     def _discover_and_add_cameras(self):
         while self.running:
@@ -55,17 +50,15 @@ class Application:
         try:
             logger.info("Starting MQTT broker")
             self.broker.start()
-            time.sleep(2)
 
             logger.info("Connecting MQTT client")
             self.mqtt_client.connect()
             self.mqtt_client.start_background_loop()
-            time.sleep(2)
 
             logger.info("Loading existing cameras from database")
             cameras = self.db.get_cameras()
             for cam_id, name, location, ip, rtsp_url in cameras:
-                if cam_id not in self.streams and ip == "192.168.0.93":  # Only start known working camera
+                if cam_id not in self.streams:  # Only start known working camera
                     self._start_stream(cam_id, rtsp_url)
 
             logger.info("Starting discovery thread")

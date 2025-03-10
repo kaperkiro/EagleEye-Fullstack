@@ -23,15 +23,10 @@ class MqttClient:
     def _on_message(self, client: mqtt.Client, userdata: Any, 
                    msg: mqtt.MQTTMessage) -> None:
         try:
-            # Extract camera ID from topic (e.g., axis/1/frame_metadata)
-            # camera_id = int(msg.topic.split('/')[1])
-            # print(f"camera_id: {camera_id}")
             camera_id = 1 # TODO: FIX HARD CODED CAMERA ID
             payload = json.loads(msg.payload.decode())
-            # print(f"payload: {payload} \n")
             frame_data = payload.get("frame", {})
             self.detections[camera_id] = frame_data.get("observations", [])
-            # print(f"Updated detections for camera {camera_id}: {len(self.detections[camera_id])} objects")
         except (json.JSONDecodeError, ValueError) as e:
             print(f"Failed to parse MQTT message: {e}")
     
