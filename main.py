@@ -55,15 +55,17 @@ class Application:
             self.mqtt_client.connect()
             self.mqtt_client.start_background_loop()
 
+            logger.info("Starting discovery thread")
+            discovery_thread = Thread(target=self._discover_and_add_cameras, daemon=True)
+            discovery_thread.start()
+
             logger.info("Loading existing cameras from database")
             cameras = self.db.get_cameras()
+            
             for cam_id, name, location, ip, rtsp_url in cameras:
                 if cam_id not in self.streams:  # Only start known working camera
                     self._start_stream(cam_id, rtsp_url)
 
-            logger.info("Starting discovery thread")
-            discovery_thread = Thread(target=self._discover_and_add_cameras, daemon=True)
-            discovery_thread.start()
 
             while self.running:
                 time.sleep(1)
