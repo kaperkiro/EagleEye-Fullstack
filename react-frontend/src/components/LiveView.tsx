@@ -1,6 +1,6 @@
-import { FloorPlanWithObjects } from "./map_obj";
+import { FloorPlanWithObjects } from "./MapObj";
 import React, { useState } from "react";
-import VideoWindow from "./videoWindow";
+import VideoWindow from "./VideoWindow";
 
 export const LiveViewData = () => {
   const [activeStreams, setActiveStreams] = useState<Record<number, string[]>>(

@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import Logo from "./assets/logo.png";
-import LiveViewData from "./liveView";
-import HeatMapData from "./heatmap";
-import LarmData from "./alarms";
+import LiveViewData from "./components/LiveView";
+import HeatMapData from "./components/HeatMap";
+import LarmData from "./components/Alarms";
 
 function App() {
   // State to track the active button index
@@ -15,7 +15,6 @@ function App() {
   };
 
   let SiteData;
-
   if (activeIndex == 0) {
     SiteData = <LiveViewData />;
   } else if (activeIndex == 1) {
@@ -113,7 +112,6 @@ function App() {
           </button>
         </div>
       </header>
-
       {/* Main Content */}
       {SiteData}
     </div>

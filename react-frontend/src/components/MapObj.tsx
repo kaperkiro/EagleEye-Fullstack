@@ -1,8 +1,8 @@
 // src/map_obj.tsx
 import React, { useState, useEffect } from "react";
-import FloorPlan from "./assets/floor_plan.jpg";
-import { mock_obj_data } from "./mock_data";
-import { objHistoryMock } from "./mock_data";
+import FloorPlan from "../assets/floor_plan.jpg";
+import { mock_obj_data } from "./MockData";
+import { objHistoryMock } from "./MockData";
 
 interface FloorPlanWithObjectsProps {
   selectedId: number | null;

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import FloorPlan from "./assets/floor_plan.jpg";
-import { heatmapData } from "./mock_data";
+import FloorPlan from "../assets/floor_plan.jpg";
+import { heatmapData } from "./MockData";
 
 const FloorPlanWithHeatmap = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);

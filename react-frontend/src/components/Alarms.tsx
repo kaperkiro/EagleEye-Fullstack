@@ -1,6 +1,6 @@
 import React from "react";
-import FloorPlan from "./assets/floor_plan.jpg";
-import { mock_obj_data } from "./mock_data";
+import FloorPlan from "../assets/floor_plan.jpg";
+import { mock_obj_data } from "./MockData";
 
 export const LarmData = () => {
   return (

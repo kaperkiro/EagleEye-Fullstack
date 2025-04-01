@@ -69,7 +69,7 @@ export function objHistoryMock(id: number): ObjectHistory {
 export const heatmapData = {
   heatmap: {
     last_hour: [
-      { x: 20, y: 45, intensity: 30 },
+      { x: 20, y: 45, intensity: 50 },
       { x: 50, y: 30, intensity: 5 },
     ],
     // You can include more ranges if needed
