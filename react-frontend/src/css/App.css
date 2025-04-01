@@ -1,0 +1,61 @@
+
+/* New Styles for App.tsx */
+.app-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+  flex-direction: column;
+  margin: 0;
+}
+
+.app-header {
+  border-bottom: 1px solid;
+  display: flex;
+  background-color: #ffffff;
+  padding: 20px;
+  text-align: center;
+  align-items: center;
+}
+
+.app-logo {
+  width: 100px;
+  height: 100px;
+}
+
+/* Adjust layout for the button container */
+.button-container {
+  display: flex;
+  background-color: #ffffff;
+  text-align: center;
+  align-items: center;
+  flex-direction: row;
+  /* Instead of individual margin-left, we use gap.
+     The first button will have a little less gap if needed using first-child */
+  gap: 10px;
+  margin-left: 120px;
+}
+
+.toggle-button {
+  border: 1px solid black;
+  width: 150px;
+  height: 50px;
+  font-size: 24px;
+  border-radius: 20px;
+  background-color: white;
+  color: black;
+}
+
+/* Set custom margin for buttons as in the original inline styles */
+.button-container button:first-child {
+  margin-left: 40px;
+}
+.button-container button:not(:first-child) {
+  margin-left: 50px;
+}
+
+/* Active button styling */
+.toggle-button.active {
+  background-color: #3B82F6;
+  color: white;
+}
