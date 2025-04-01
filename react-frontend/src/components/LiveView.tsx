@@ -1,7 +1,7 @@
 import { FloorPlanWithObjects } from "./MapObj";
 import React, { useState } from "react";
 import VideoWindow from "./VideoWindow";
-
+import "../css/LiveView.css";
 export const LiveViewData = () => {
   const [activeStreams, setActiveStreams] = useState<Record<number, string[]>>(
     {}
@@ -22,34 +22,14 @@ export const LiveViewData = () => {
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flex: 1,
-        flexDirection: "row",
-      }}
-    >
-      <div
-        className="leftSidebar"
-        style={{
-          borderRight: "solid",
-          width: "25%",
-        }}
-      >
+    <div className="liveViewDiv">
+      <div className="leftSidebar">
         {selectedId != null &&
           activeStreams[selectedId]?.map((url) => (
             <VideoWindow key={url} rtspUrl={url} />
           ))}
       </div>
-      <div
-        className="mapDiv"
-        style={{
-          width: "75%",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
+      <div className="mapDiv">
         <FloorPlanWithObjects
           selectedId={selectedId}
           onDotClick={handleDotClick}

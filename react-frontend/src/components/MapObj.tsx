@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import FloorPlan from "../assets/floor_plan.jpg";
 import { mock_obj_data } from "./MockData";
 import { objHistoryMock } from "./MockData";
+import "../css/MapObj.css";
 
 interface FloorPlanWithObjectsProps {
   selectedId: number | null;
@@ -46,7 +47,7 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
   }, []);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+    <div className="mapDiv">
       <img
         src={FloorPlan}
         alt="Floor Plan"
@@ -56,22 +57,16 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
         const isSelected = obj.id === selectedId;
         return (
           <button
+            className="mapButton"
             key={obj.id}
             onClick={() =>
               getStreamUrls(obj.id).then((urls) => onDotClick(obj.id, urls))
             }
             style={{
-              position: "absolute",
+              // leave variable styling in component for now
               left: `${obj.x}%`,
               top: `${obj.y}%`,
-              zIndex: 1,
-              transform: "translate(-50%, -50%)",
-              width: "20px",
-              height: "20px",
               backgroundColor: isSelected ? "yellow" : "#3B82F6",
-              borderRadius: "50%",
-              border: "2px solid",
-              cursor: "pointer",
             }}
           />
         );
@@ -79,16 +74,9 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
       {/* Draw blue, dotted, smoothed history line when selected */}
       {selectedId !== null && objHistoryMock(selectedId).history.length > 0 && (
         <svg
+          className="blueDots"
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            width: "100%",
-            height: "100%",
-            pointerEvents: "none",
-          }}
         >
           <path
             d={objHistoryMock(selectedId)

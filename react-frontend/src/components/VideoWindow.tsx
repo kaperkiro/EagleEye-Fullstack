@@ -1,6 +1,7 @@
 // VideoWindow.tsx
 import React, { useRef, useEffect } from "react";
 import Hls from "hls.js";
+import "../css/VideoWindow.css";
 
 interface Props {
   rtspUrl: string;
@@ -23,14 +24,7 @@ const VideoWindow: React.FC<Props> = ({ rtspUrl }) => {
   }, [hlsUrl]);
 
   return (
-    <div
-      style={{
-        marginBottom: 2,
-        border: "2px solid",
-        borderRadius: 20,
-        overflow: "hidden",
-      }}
-    >
+    <div className="videoWindow">
       <video ref={videoRef} width="100%" height="220" autoPlay muted />
     </div>
   );
