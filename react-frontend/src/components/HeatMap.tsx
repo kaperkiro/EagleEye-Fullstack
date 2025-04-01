@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import FloorPlan from "../assets/floor_plan.jpg";
 import { heatmapData } from "./MockData";
+import "../css/HeatMap.css";
 
 const FloorPlanWithHeatmap = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -87,121 +88,43 @@ export const HeatMapData = () => {
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flex: 1,
-        flexDirection: "row",
-      }}
-    >
-      <div
-        className="leftSidebar"
-        style={{
-          borderRight: "solid",
-          width: "25%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <h1
-          style={{
-            marginBottom: 40,
-            marginTop: -40,
-            color: "#1A202C",
-            opacity: "75%",
-            fontSize: "40px",
-          }}
-        >
-          Select Timeframe
-        </h1>
+    <div className="heatMapDiv">
+      <div className="leftSidebar">
+        <h1 className="heatMapTitle">Select Timeframe</h1>
         <button
-          style={{
-            border: "solid black",
-            backgroundColor: activeIndexHM === 0 ? "#3B82F6" : "white",
-            width: "150px",
-            height: "50px",
-            marginBottom: "20px",
-            fontSize: "24px",
-            borderRadius: "20px",
-            color: activeIndexHM === 0 ? "white" : "black",
-          }}
+          //We can create css for both states and use inline JS to go between both states...
+          className={`heatMapButton ${activeIndexHM === 0 ? "active" : ""}`}
           onClick={() => handleButtonClick(0)}
         >
           Last Hour
         </button>
 
         <button
-          style={{
-            border: "solid black",
-            backgroundColor: activeIndexHM === 1 ? "#3B82F6" : "white",
-            width: "150px",
-            height: "50px",
-            marginBottom: "20px",
-            fontSize: "24px",
-            borderRadius: "20px",
-            color: activeIndexHM === 1 ? "white" : "black",
-          }}
+          className={`heatMapButton ${activeIndexHM === 1 ? "active" : ""}`}
           onClick={() => handleButtonClick(1)}
         >
           6 Hours
         </button>
         <button
-          style={{
-            border: "solid black",
-            backgroundColor: activeIndexHM === 2 ? "#3B82F6" : "white",
-            width: "150px",
-            height: "50px",
-            marginBottom: "20px",
-            fontSize: "24px",
-            borderRadius: "20px",
-            color: activeIndexHM === 2 ? "white" : "black",
-          }}
+          className={`heatMapButton ${activeIndexHM === 2 ? "active" : ""}`}
           onClick={() => handleButtonClick(2)}
         >
           12 Hours
         </button>
         <button
-          style={{
-            border: "solid black",
-            backgroundColor: activeIndexHM === 3 ? "#3B82F6" : "white",
-            width: "150px",
-            height: "50px",
-            marginBottom: "20px",
-            fontSize: "24px",
-            borderRadius: "20px",
-            color: activeIndexHM === 3 ? "white" : "black",
-          }}
+          className={`heatMapButton ${activeIndexHM === 3 ? "active" : ""}`}
           onClick={() => handleButtonClick(3)}
         >
           18 Hours
         </button>
         <button
-          style={{
-            border: "solid black",
-            backgroundColor: activeIndexHM === 4 ? "#3B82F6" : "white",
-            width: "150px",
-            height: "50px",
-            marginBottom: "20px",
-            fontSize: "24px",
-            borderRadius: "20px",
-            color: activeIndexHM === 4 ? "white" : "black",
-          }}
+          className={`heatMapButton ${activeIndexHM === 4 ? "active" : ""}`}
           onClick={() => handleButtonClick(4)}
         >
           24 Hours
         </button>
       </div>
-      <div
-        className="mapDiv"
-        style={{
-          width: "75%",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
+      <div className="mapDiv">
         <FloorPlanWithHeatmap />
       </div>
     </div>
