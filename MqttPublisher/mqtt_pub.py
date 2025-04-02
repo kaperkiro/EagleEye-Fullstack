@@ -8,19 +8,37 @@ topic = "axis/frame_metadata"
 
 def publish_dummy_data(client):
     dummy_payload = {
-        "frame": {
+       # "frame": {
             "observations": [
                 {
-                    "bounding_box": {"left": 0.1, "top": 0.1, "right": 0.3, "bottom": 0.3},
-                    "class": {"type": "Human", "score": 0.95}
-                },
-                {
-                    "bounding_box": {"left": 0.5, "top": 0.5, "right": 0.7, "bottom": 0.7},
-                    "class": {"type": "Car", "score": 0.88}
+                    "bounding_box": {
+                        "bottom": 0.6157,
+                        "left": 0.4778,
+                        "right": 0.5588,
+                        "top": 0.3986
+                    },
+                    "class": {
+                        "lower_clothing_colors": [
+                            {"name": "Black", "score": 0.6}
+                        ],
+                        "score": 0.92,
+                        "type": "Human",
+                        "upper_clothing_colors": [
+                            {"name": "Gray", "score": 0.71}
+                        ]
+                    },
+                    "geoposition": {
+                        "latitude": 58.387021008804375,
+                        "longitude": 15.565212926847485
+                    },
+                    "timestamp": "2025-04-02T08:18:12.678869Z",
+                    "track_id": "29"
                 }
-            ]
+            ],
+            "operations": [],
+            "timestamp": "2025-04-02T08:18:12.678869Z"
         }
-    }
+  #  }
     client.publish(topic, json.dumps(dummy_payload), qos=0)
     print(f"Published: {json.dumps(dummy_payload)} ")
 
