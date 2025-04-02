@@ -1,25 +1,24 @@
-.mapDiv{
-    position: relative;
-    width: 100%;
-    height: 100%;
+.ObjmapDiv {
+  position: relative;
+  flex: 1;
 }
 
-.mapButton{
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    border: 2px solid;
-    z-index: 1;
-    cursor: pointer;
+.mapButton {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid;
+  z-index: 1;
+  cursor: pointer;
 }
 
-.blueDots{
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
+.blueDots {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }

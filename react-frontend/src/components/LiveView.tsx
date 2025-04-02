@@ -23,13 +23,13 @@ export const LiveViewData = () => {
 
   return (
     <div className="liveViewDiv">
-      <div className="leftSidebar">
+      <div className="liveLeftSidebar">
         {selectedId != null &&
           activeStreams[selectedId]?.map((url) => (
             <VideoWindow key={url} rtspUrl={url} />
           ))}
       </div>
-      <div className="mapDiv">
+      <div className="liveMapDiv">
         <FloorPlanWithObjects
           selectedId={selectedId}
           onDotClick={handleDotClick}

@@ -89,7 +89,7 @@ export const HeatMapData = () => {
 
   return (
     <div className="heatMapDiv">
-      <div className="leftSidebar">
+      <div className="heatLeftSidebar">
         <h1 className="heatMapTitle">Select Timeframe</h1>
         <button
           //We can create css for both states and use inline JS to go between both states...

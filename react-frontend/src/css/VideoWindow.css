@@ -1,6 +1,6 @@
-.videoWindow{
-    margin-bottom: 2;
-    border: 2px solid;
-    border-radius: 20;
-    overflow: hidden;
+.videoWindow {
+  margin-bottom: 2px;
+  border: 2px solid black; /* specify a color for the border */
+  border-radius: 20px;
+  overflow: hidden;
 }

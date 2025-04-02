@@ -47,7 +47,7 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
   }, []);
 
   return (
-    <div className="mapDiv">
+    <div className="ObjmapDiv">
       <img
         src={FloorPlan}
         alt="Floor Plan"
