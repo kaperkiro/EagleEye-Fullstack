@@ -2,7 +2,7 @@ import socket
 import subprocess
 
 class BrokerConfig:
-    def __init__(self, host="localhost", port=1883, config_file="mosquitto.conf"):
+    def __init__(self, host="localhost", port=1883, config_file="external/mosquitto.conf"):
         self.host = host
         self.port = port
         self.config_file = config_file
