@@ -13,8 +13,8 @@ def get_coords(decoded_msg):
     try:
         data = json.loads(decoded_msg)
         coords = {
-            "latitude": data["observations"][0]["geoposition"]["latitude"],
-            "longitude": data["observations"][0]["geoposition"]["longitude"]
+            "latitude": data["frame"]["observations"][0]["geoposition"]["latitude"],
+            "longitude": data["frame"]["observations"][0]["geoposition"]["longitude"]
         }
         return coords
     except (KeyError, IndexError, json.JSONDecodeError) as e:

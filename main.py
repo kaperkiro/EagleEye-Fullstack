@@ -2,6 +2,8 @@ from broker_manager import BrokerManager
 from database import Database
 from mqtt_client import MqttClient
 from webrtc_server import start_rtsp_to_webrtc
+from server import run_flask_server
+import threading
 import time
 import logging
 
@@ -23,8 +25,14 @@ class Application:
             self.mqtt_client.connect()
             self.mqtt_client.start_background_loop()
 
+            logger.info("Starting Flask server")
+            # Start the Flask server in a separate thread
+            threading.Thread(target=run_flask_server, args=(self.mqtt_client,)).start()
+            logger.info("Starting Flask server")
             logger.info("Starting RTSP to WebRTC server")
             start_rtsp_to_webrtc()
+            
+            
 
             while self.running:
                 time.sleep(1)
