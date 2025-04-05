@@ -10,6 +10,27 @@ interface FloorPlanWithObjectsProps {
   onDotClick: (id: number, rtspUrls: string[]) => void;
 }
 
+interface ApiResponse {
+  camera_id: number;
+  detections: BackendDetection[];
+  position : number[];
+}
+
+interface BackendDetection {
+  bounding_box: { /* ... */ }; // Behåll om relevant
+  class: { /* ... */ };       // Behåll om relevant
+  timestamp: string;
+  track_id: string; // ID från MQTT
+}
+
+// Typ för objekt som komponenten använder internt för rendering
+interface MapObject {
+  id: number; // Använder numeriskt ID internt, från track_id
+  x: number; // Position i procent (0-100)
+  y: number; // Position i procent (0-100)
+  // Lägg till andra fält från BackendDetection om de behövs för rendering
+}
+
 export async function getStreamUrls(id: number): Promise<string[]> {
   let urls: string[] = [];
   // Later, replace this with an API call to retrieve URLs for the given button.
@@ -34,17 +55,60 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
   onDotClick,
 }) => {
   // Use state to store the object data
-  const [objects, setObjects] = useState(mock_obj_data.objects);
+  //const [objects, setObjects] = useState(mock_obj_data.objects);
+
+
+  //Real object
+  const [objects, setObjects] = useState<MapObject[]>([]);
+
+
+  //kanske borde ändra s.a fetchPositionData in är nästlad
+  const fetchPositionData = async (cameraId: number) => {
+    try {
+      const response = await fetch(
+        `http://localhost:5001/api/detections/${cameraId}`
+      );
+      if (!response.ok) {
+        let errorMsg = `HTTP error! status: ${response.status} ${response.statusText}`;
+        try {
+          const errorBody = await response.json();
+          errorMsg += `: ${errorBody.message || JSON.stringify(errorBody)}`;
+        } catch (e) {
+          /* Ignorera om body inte är JSON */
+        }
+        throw new Error(errorMsg);
+      }
+      const data: ApiResponse = await response.json();
+      console.log(data);
+
+      const mappedObjects: MapObject[] = Array.isArray(data.position) && data.position.length === 3
+        ? [{
+          id: data.position[0],
+          x: data.position[1],
+          y: data.position[2],
+        }]
+        : [];
+      console.log("mappedObjects!!!!!:", mappedObjects); 
+      setObjects(mappedObjects);
+    } catch (err) {
+      console.error("Failed to fetch position data:", err);
+    }
+  };
 
   useEffect(() => {
     // Poll for new object data every 500ms.
     const interval = setInterval(() => {
       // Replace this line with your API call when ready.
-      setObjects(mock_obj_data.objects);
+      //API call:
+      fetchPositionData(1);
+      //setObjects(mock_obj_data.objects);
     }, 500);
 
     return () => clearInterval(interval);
   }, []);
+
+
+
 
   return (
     <div className="ObjmapDiv">
