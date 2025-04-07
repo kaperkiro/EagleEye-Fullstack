@@ -1,17 +1,19 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
+
 # Importera dina andra moduler vid behov
-# from database import Database 
+# from database import Database
 import base64
 import os
+
 # import sqlite3 # Importera om du använder det direkt
-import atexit # För att städa upp vid avslut
+import atexit  # För att städa upp vid avslut
 import logging
 
 # Importera din MqttClient-klass
-from mqtt_client import MqttClient 
+from mqtt_client import MqttClient
 
-logging.basicConfig(level=logging.INFO) # Konfigurera logging för servern
+logging.basicConfig(level=logging.INFO)  # Konfigurera logging för servern
 
 app = Flask(__name__)
 CORS(app)
@@ -38,27 +40,26 @@ def get_camera_detections(camera_id):
 
         position = mqtt_client.position
 
-
-        logging.info(f"API request for positions from camera {camera_id}, found {len(position)} detections.")
-        return jsonify({
-            "camera_id": camera_id,
-            "detections": detections,
-            "position" : position
-        })
+        logging.info(
+            f"API request for positions from camera {camera_id}, found {len(position)} detections."
+        )
+        return jsonify(
+            {"camera_id": camera_id, "detections": detections, "position": position}
+        )
     else:
-        logging.warning(f"API request for detections from camera {camera_id}, but MQTT client is not initialized.")
+        logging.warning(
+            f"API request for detections from camera {camera_id}, but MQTT client is not initialized."
+        )
         # Returnera 503 Service Unavailable om klienten inte är redo
-        return jsonify({"message": "MQTT client not available"}), 503 
+        return jsonify({"message": "MQTT client not available"}), 503
+
 
 @app.route("/map")
 def get_map():
     if os.path.exists(MAP_PATH):
-        return send_file(MAP_PATH, mimetype='image/jpeg')
+        return send_file(MAP_PATH, mimetype="image/jpeg")
     else:
-         return jsonify({"message": "Map file not found"}), 404
-    
-
-
+        return jsonify({"message": "Map file not found"}), 404
 
 
 def run_flask_server(mqtt_client_instance: MqttClient):
@@ -69,9 +70,9 @@ def run_flask_server(mqtt_client_instance: MqttClient):
     global mqtt_client
     # Sätt den globala MQTT-klienten till den som skickades in
     # i funktionen så att den kan användas i API-rutterna
-    mqtt_client = mqtt_client_instance 
+    mqtt_client = mqtt_client_instance
     """
     Startar Flask-servern.
     """
     logging.info("Starting Flask server...")
-    app.run(debug=True, port=5001, use_reloader=False, host='0.0.0.0')
+    app.run(debug=True, port=5001, use_reloader=False, host="0.0.0.0")

@@ -1,10 +1,15 @@
 import subprocess
 import os
 
+
 def start_rtsp_to_webrtc():
     # Define the path to the RTSPtoWebRTC directory relative to this script
-    script_dir = os.path.dirname(os.path.abspath(__file__))  # Directory of the Python script
-    rtsp_dir = os.path.join(script_dir, "external", "RTSPtoWebRTC")  # Path to RTSPtoWebRTC
+    script_dir = os.path.dirname(
+        os.path.abspath(__file__)
+    )  # Directory of the Python script
+    rtsp_dir = os.path.join(
+        script_dir, "external", "RTSPtoWebRTC"
+    )  # Path to RTSPtoWebRTC
 
     # Command to run the Go program
     command = ["go", "run", rtsp_dir]
@@ -16,11 +21,11 @@ def start_rtsp_to_webrtc():
             cwd=rtsp_dir,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
         )
         print("RTSPtoWebRTC server starting...")
 
-        for line in process.stdout: # Read output line by line
+        for line in process.stdout:  # Read output line by line
             print(line.strip())
 
         # Check for errors
@@ -32,7 +37,10 @@ def start_rtsp_to_webrtc():
     except subprocess.CalledProcessError as e:
         print(f"Error: {e}")
     except FileNotFoundError:
-        print("Error: 'go' command not found. Please ensure Go is installed and in your PATH.")
+        print(
+            "Error: 'go' command not found. Please ensure Go is installed and in your PATH."
+        )
+
 
 if __name__ == "__main__":
     start_rtsp_to_webrtc()

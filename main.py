@@ -9,6 +9,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class Application:
     def __init__(self):
         self.broker = BrokerManager()
@@ -31,8 +32,6 @@ class Application:
             logger.info("Starting Flask server")
             logger.info("Starting RTSP to WebRTC server")
             start_rtsp_to_webrtc()
-            
-            
 
             while self.running:
                 time.sleep(1)
@@ -44,9 +43,11 @@ class Application:
             self.mqtt_client.stop()
             logger.info("Application shutdown complete")
 
+
 def main():
     app = Application()
     app.run()
+
 
 if __name__ == "__main__":
     main()
