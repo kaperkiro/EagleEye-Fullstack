@@ -1,5 +1,4 @@
-// VideoWindow.tsx
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import Hls from "hls.js";
 import "../css/VideoWindow.css";
 
@@ -9,8 +8,10 @@ interface Props {
 
 const VideoWindow: React.FC<Props> = ({ rtspUrl }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  //const hlsUrl = rtspUrl.replace("rtsp://", "https://api.example.com/hls/"); med riktiga api requests
-  const hlsUrl = "https://ireplay.tv/test/blender.m3u8";
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hlsUrl =
+    "http://playertest.longtailvideo.com/adaptive/wowzaid3/playlist.m3u8";
+  const [active, setActive] = useState(false);
 
   useEffect(() => {
     if (Hls.isSupported() && videoRef.current) {
@@ -23,13 +24,45 @@ const VideoWindow: React.FC<Props> = ({ rtspUrl }) => {
     }
   }, [hlsUrl]);
 
+  // Toggle fullscreen and update active state.
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current
+        ?.requestFullscreen()
+        .then(() => setActive(true))
+        .catch((err) => console.error("Error enabling fullscreen mode:", err));
+    } else {
+      document
+        .exitFullscreen()
+        .then(() => setActive(false))
+        .catch((err) => console.error("Error exiting fullscreen mode:", err));
+    }
+  };
+
+  // Listen for fullscreen changes to update the active state.
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        setActive(false);
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
   return (
-    <div className="videoWindow">
+    <div
+      className={`videoWindow ${active ? "active" : ""}`}
+      ref={containerRef}
+      onClick={toggleFullScreen}
+      style={{ cursor: "pointer" }}
+    >
       <video
-        className="videoStream"
+        className={`videoStream ${active ? "active" : ""}`}
         ref={videoRef}
-        width="100%"
-        height="220"
         autoPlay
         muted
       />

@@ -1,13 +1,40 @@
+/* Default styles */
 .videoWindow {
   margin-top: 0.5vh;
   margin-right: 0.5vh;
-  border: 0.25vh solid black; /* specify a color for the border */
+  border: 0.25vh solid black;
   border-radius: 2.2vh;
   overflow: hidden;
   padding-top: 0.1vh;
   padding-bottom: 1vh;
   height: 24vh;
+  position: relative;
+  transition: all 0.3s ease;
 }
+
 .videoStream {
+  width: 100%;
   height: 25vh;
+  object-fit: cover;
+  transition: all 0.3s ease;
+}
+
+/* Active fullscreen styles */
+.videoWindow.active {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: black;
+}
+
+.videoWindow.active .videoStream {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
