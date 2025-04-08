@@ -1,6 +1,13 @@
 .videoWindow {
-  margin-bottom: 2px;
-  border: 2px solid black; /* specify a color for the border */
-  border-radius: 20px;
+  margin-top: 0.5vh;
+  margin-right: 0.5vh;
+  border: 0.25vh solid black; /* specify a color for the border */
+  border-radius: 2.2vh;
   overflow: hidden;
+  padding-top: 0.1vh;
+  padding-bottom: 1vh;
+  height: 24vh;
+}
+.videoStream {
+  height: 25vh;
 }

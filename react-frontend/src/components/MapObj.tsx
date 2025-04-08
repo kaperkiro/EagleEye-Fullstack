@@ -13,12 +13,16 @@ interface FloorPlanWithObjectsProps {
 interface ApiResponse {
   camera_id: number;
   detections: BackendDetection[];
-  position : number[];
+  position: number[];
 }
 
 interface BackendDetection {
-  bounding_box: { /* ... */ }; // Behåll om relevant
-  class: { /* ... */ };       // Behåll om relevant
+  bounding_box: {
+    /* ... */
+  }; // Behåll om relevant
+  class: {
+    /* ... */
+  }; // Behåll om relevant
   timestamp: string;
   track_id: string; // ID från MQTT
 }
@@ -55,12 +59,10 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
   onDotClick,
 }) => {
   // Use state to store the object data
-  //const [objects, setObjects] = useState(mock_obj_data.objects);
-
+  const [objects, setObjects] = useState(mock_obj_data.objects);
 
   //Real object
-  const [objects, setObjects] = useState<MapObject[]>([]);
-
+  //const [objects, setObjects] = useState<MapObject[]>([]);
 
   //kanske borde ändra s.a fetchPositionData in är nästlad
   const fetchPositionData = async (cameraId: number) => {
@@ -81,14 +83,17 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
       const data: ApiResponse = await response.json();
       console.log(data);
 
-      const mappedObjects: MapObject[] = Array.isArray(data.position) && data.position.length === 3
-        ? [{
-          id: data.position[0],
-          x: data.position[1],
-          y: data.position[2],
-        }]
-        : [];
-      console.log("mappedObjects!!!!!:", mappedObjects); 
+      const mappedObjects: MapObject[] =
+        Array.isArray(data.position) && data.position.length === 3
+          ? [
+              {
+                id: data.position[0],
+                x: data.position[1],
+                y: data.position[2],
+              },
+            ]
+          : [];
+      console.log("mappedObjects!!!!!:", mappedObjects);
       setObjects(mappedObjects);
     } catch (err) {
       console.error("Failed to fetch position data:", err);
@@ -100,15 +105,12 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
     const interval = setInterval(() => {
       // Replace this line with your API call when ready.
       //API call:
-      fetchPositionData(1);
-      //setObjects(mock_obj_data.objects);
+      //fetchPositionData(1);
+      setObjects(mock_obj_data.objects);
     }, 500);
 
     return () => clearInterval(interval);
   }, []);
-
-
-
 
   return (
     <div className="ObjmapDiv">

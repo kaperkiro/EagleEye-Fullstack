@@ -27,25 +27,25 @@ function App() {
       {/* Header Section */}
       <header className="app-header">
         <img src={Logo} alt="logga" className="app-logo" />
-        <h1>EagleEye</h1>
+        <h1 className="title">EagleEye</h1>
         <div className="button-container">
           <button
             className={`toggle-button ${activeIndex === 0 ? "active" : ""}`}
             onClick={() => handleButtonClick(0)}
           >
-            Live View
+            <p className="buttonText">Live View</p>
           </button>
           <button
             className={`toggle-button ${activeIndex === 1 ? "active" : ""}`}
             onClick={() => handleButtonClick(1)}
           >
-            Historical
+            <p className="buttonText">Historical</p>
           </button>
           <button
             className={`toggle-button ${activeIndex === 2 ? "active" : ""}`}
             onClick={() => handleButtonClick(2)}
           >
-            Larms
+            <p className="buttonText">Larms</p>
           </button>
         </div>
       </header>
