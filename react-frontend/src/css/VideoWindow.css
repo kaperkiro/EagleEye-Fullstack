@@ -13,7 +13,7 @@
 }
 
 .videoStream {
-  width: 100%;
+  width: 24.5vw;
   height: 25vh;
   object-fit: cover;
   transition: all 0.3s ease;

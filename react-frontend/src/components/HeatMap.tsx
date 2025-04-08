@@ -25,18 +25,37 @@ const FloorPlanWithHeatmap = () => {
 
     // Draw each heatmap point as a radial gradient circle
     points.forEach((point) => {
-      // The x and y values are percentages (0-100). Convert them to pixels.
+      // Convert the x and y percentages into pixel values.
       const x = (point.x / 100) * canvasWidth;
       const y = (point.y / 100) * canvasHeight;
 
-      // Map intensity to a radius (adjust scaling as needed)
-      const radius = point.intensity * 3;
+      // Define the radius as needed.
+      const radius = 25 * 3;
 
-      // Create a radial gradient: center is red and opaque, edges are transparent
+      // Determine the color based on intensity (which is now a value between 0 and 1).
+      let red, green;
+      const blue = 0; // Always 0.
+
+      if (point.intensity <= 0.5) {
+        // For intensities between 0 and 0.5, interpolate from green (0,255,0) to yellow (255,255,0).
+        red = Math.round((point.intensity / 0.5) * 255);
+        green = 255;
+      } else {
+        // For intensities above 0.5, interpolate from yellow (255,255,0) to red (255,0,0).
+        red = 255;
+        green = Math.round((1 - (point.intensity - 0.5) / 0.5) * 255);
+      }
+
+      // Create the center and edge colors with alpha values for opacity.
+      const centerColor = `rgba(${red}, ${green}, ${blue}, 0.7)`; // Opaque center.
+      const edgeColor = `rgba(${red}, ${green}, ${blue}, 0.4)`; // Fully transparent edge.
+
+      // Create a radial gradient from center (opaque) to edge (transparent).
       const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-      gradient.addColorStop(0, "rgba(255, 0, 0, 0.8)");
-      gradient.addColorStop(1, "rgba(255, 0, 0, 0)");
+      gradient.addColorStop(0, centerColor);
+      gradient.addColorStop(1, edgeColor);
 
+      // Draw the dot using the gradient.
       ctx.beginPath();
       ctx.fillStyle = gradient;
       ctx.arc(x, y, radius, 0, Math.PI * 2);
