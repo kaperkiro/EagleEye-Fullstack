@@ -1,12 +1,12 @@
 .liveViewDiv {
   display: flex;
   width: 100%;
-  height: 100vh; /* or another defined height */
+  height: 100%;
 }
 
 .liveLeftSidebar {
-  flex: 0 0 25%; /* fixed at 25% of the container */
-  border-right: solid 2px black;
+  width: 25%;
+  border-right: solid 0.22vw black;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;

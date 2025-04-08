@@ -5,7 +5,7 @@
 }
 
 .mapDiv {
-  width: 75%;
+  flex: 1; /* take up all remaining space */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -21,8 +21,8 @@
 }
 
 .heatMapTitle {
-  margin-bottom: 40px;
-  margin-top: -40px;
+  margin-bottom: 5vh;
+  margin-top: -2vh;
   color: #1a202c;
   opacity: 75%;
   font-size: 40px;

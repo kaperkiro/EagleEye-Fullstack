@@ -5,11 +5,12 @@
 
 .mapButton {
   position: absolute;
-  width: 20px;
-  height: 20px;
+  width: 2.2vh;
+  height: 2.2vh;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  border: 2px solid;
+  background-color: #3b82f6;
+  border: 0.25vh solid;
   z-index: 1;
   cursor: pointer;
 }

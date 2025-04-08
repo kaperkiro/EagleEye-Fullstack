@@ -9,17 +9,17 @@
 }
 
 .app-header {
-  border-bottom: 2px solid;
+  border-bottom: 0.3vh solid;
   display: flex;
   background-color: #ffffff;
-  padding: 20px;
+  padding: 2vh;
   text-align: center;
   align-items: center;
 }
 
 .app-logo {
-  width: 100px;
-  height: 100px;
+  width: 10vh;
+  height: 10vh;
 }
 
 /* Adjust layout for the button container */
@@ -31,26 +31,26 @@
   flex-direction: row;
   /* Instead of individual margin-left, we use gap.
      The first button will have a little less gap if needed using first-child */
-  gap: 10px;
-  margin-left: 120px;
+  gap: 1vh;
+  margin-left: 12vh;
 }
 
 .toggle-button {
-  border: 3px solid black;
-  width: 150px;
-  height: 50px;
-  font-size: 24px;
-  border-radius: 20px;
+  border: 0.35vh solid black;
+  width: 18vh;
+  height: 6vh;
+  font-size: 3vh;
+  border-radius: 2.5vh;
   background-color: white;
   color: black;
 }
 
 /* Set custom margin for buttons as in the original inline styles */
 .button-container button:first-child {
-  margin-left: 40px;
+  margin-left: 5vh;
 }
 .button-container button:not(:first-child) {
-  margin-left: 50px;
+  margin-left: 8vh;
 }
 
 /* Active button styling */
