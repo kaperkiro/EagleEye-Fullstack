@@ -1,26 +1,22 @@
 /* Default styles */
-.videoWindow {
-  margin-top: 0.5vh;
-  margin-right: 0.5vh;
-  border: 0.25vh solid black;
-  border-radius: 2.2vh;
-  overflow: hidden;
-  padding-top: 0.1vh;
-  padding-bottom: 1vh;
-  height: 24vh;
+.videoContainer {
+  height: 25vh;
+  margin: 0vh;
   position: relative;
   transition: all 0.3s ease;
 }
 
 .videoStream {
-  width: 24.5vw;
-  height: 25vh;
-  object-fit: cover;
-  transition: all 0.3s ease;
+  height: 100%;
+  width: 100%;
+  object-fit: cover; /* Ensures video fills container */
+  box-sizing: border-box;
+  border-radius: 2.2vh;
+  border: 0.25vh solid black;
 }
 
 /* Active fullscreen styles */
-.videoWindow.active {
+.videoContainer.active {
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
@@ -29,12 +25,19 @@
   height: 100vh !important;
   background: black;
 }
+.videoStream.active {
+  width: 100vh;
+  height: 100vh;
+  object-fit: cover;
+  transition: all 0.3s ease;
+}
 
-.videoWindow.active .videoStream {
+.videoContainer.active .videoStream {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100%; /* Change these values as needed */
+  height: 100%; /* Change these values as needed */
   object-fit: cover;
+  margin: auto; /* If you need centering */
 }

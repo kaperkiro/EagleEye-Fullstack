@@ -34,6 +34,12 @@
   gap: 1vh;
   margin-left: 12vh;
 }
+.title-container {
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  width: 17vw;
+}
 
 .toggle-button {
   display: flex;

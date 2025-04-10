@@ -26,8 +26,10 @@ function App() {
     <div className="app-container">
       {/* Header Section */}
       <header className="app-header">
-        <img src={Logo} alt="logga" className="app-logo" />
-        <h1 className="title">EagleEye</h1>
+        <div className="title-container">
+          <img src={Logo} alt="logga" className="app-logo" />
+          <h1 className="title">EagleEye</h1>
+        </div>
         <div className="button-container">
           <button
             className={`toggle-button ${activeIndex === 0 ? "active" : ""}`}

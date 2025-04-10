@@ -1,30 +1,113 @@
-import React, { useRef, useEffect, useState } from "react";
-import Hls from "hls.js";
+import { useEffect, useRef, useState } from "react";
 import "../css/VideoWindow.css";
 
-interface Props {
-  rtspUrl: string;
-}
-
-const VideoWindow: React.FC<Props> = ({ rtspUrl }) => {
+const WebRTCStream: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const hlsUrl =
-    "http://playertest.longtailvideo.com/adaptive/wowzaid3/playlist.m3u8";
+  const pcRef = useRef<RTCPeerConnection | null>(null);
+  const [status, setStatus] = useState<string>("Connecting...");
   const [active, setActive] = useState(false);
 
   useEffect(() => {
-    if (Hls.isSupported() && videoRef.current) {
-      const hls = new Hls();
-      hls.loadSource(hlsUrl);
-      hls.attachMedia(videoRef.current);
-      return () => {
-        hls.destroy();
-      };
-    }
-  }, [hlsUrl]);
+    const streamId = "camera1";
+    const baseUrl = "http://localhost:8083/stream";
 
-  // Toggle fullscreen and update active state.
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    });
+    pcRef.current = pc;
+
+    const stream = new MediaStream();
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+    }
+
+    pc.ontrack = (event) => {
+      console.log("Video track received");
+      stream.addTrack(event.track);
+      setStatus("Streaming");
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      console.log("ICE state:", pc.iceConnectionState);
+      setStatus(pc.iceConnectionState);
+    };
+
+    const getCodecInfo = async () => {
+      try {
+        const response = await fetch(`${baseUrl}/codec/${streamId}`);
+        if (!response.ok)
+          throw new Error(`Codec fetch failed: ${response.status}`);
+        const data: { Type: string }[] = await response.json();
+        if (pcRef.current?.signalingState !== "closed") {
+          data.forEach((codec) => {
+            pc.addTransceiver(codec.Type, { direction: "recvonly" });
+          });
+          console.log("Codec info loaded:", data);
+        }
+      } catch (e) {
+        console.error("Error fetching codec info:", e);
+        setStatus("Failed to load codec info");
+      }
+    };
+
+    const negotiate = async () => {
+      try {
+        if (pcRef.current?.signalingState === "closed") {
+          throw new Error("RTCPeerConnection is closed");
+        }
+        console.log("Starting negotiation");
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        console.log("Sending SDP offer:", offer.sdp);
+
+        const response = await fetch(`${baseUrl}/receiver/${streamId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            suuid: streamId,
+            data: btoa(offer.sdp || ""),
+          }).toString(),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(
+            `Server responded with ${response.status}: ${errorText}`
+          );
+        }
+
+        const answerSdp = await response.text();
+        console.log("Raw server response:", answerSdp);
+        if (!answerSdp) throw new Error("Empty SDP answer received");
+
+        const answer: RTCSessionDescriptionInit = {
+          type: "answer",
+          sdp: atob(answerSdp),
+        };
+        console.log("Decoded SDP answer:", answer.sdp);
+        await pc.setRemoteDescription(new RTCSessionDescription(answer));
+      } catch (e) {
+        console.error("Negotiation failed:", e);
+        setStatus(`Negotiation failed: ${e}`);
+      }
+    };
+
+    const start = async () => {
+      await getCodecInfo();
+      await negotiate();
+    };
+
+    start();
+
+    return () => {
+      if (pcRef.current && pcRef.current.signalingState !== "closed") {
+        pcRef.current.close();
+      }
+    };
+  }, []);
+
+  // Toggle fullscreen and update the active state
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
       containerRef.current
@@ -39,7 +122,7 @@ const VideoWindow: React.FC<Props> = ({ rtspUrl }) => {
     }
   };
 
-  // Listen for fullscreen changes to update the active state.
+  // Listen for fullscreen changes to update active state (e.g., when user presses Escape)
   useEffect(() => {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
@@ -48,26 +131,28 @@ const VideoWindow: React.FC<Props> = ({ rtspUrl }) => {
     };
 
     document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => {
+    return () =>
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
-    };
   }, []);
 
   return (
     <div
-      className={`videoWindow ${active ? "active" : ""}`}
       ref={containerRef}
       onClick={toggleFullScreen}
-      style={{ cursor: "pointer" }}
+      className={`videoContainer ${active ? "active" : ""}`}
+      style={{ textAlign: "center", padding: "5px", cursor: "pointer" }}
     >
       <video
-        className={`videoStream ${active ? "active" : ""}`}
         ref={videoRef}
         autoPlay
+        playsInline
         muted
+        className={`videoStream ${active ? "active" : ""}`}
+        style={{ maxWidth: "100%", maxHeight: "100%" }}
       />
+      <div>{status}</div>
     </div>
   );
 };
 
-export default VideoWindow;
+export default WebRTCStream;

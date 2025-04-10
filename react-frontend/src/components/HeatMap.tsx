@@ -30,7 +30,7 @@ const FloorPlanWithHeatmap = () => {
       const y = (point.y / 100) * canvasHeight;
 
       // Define the radius as needed.
-      const radius = 25 * 3;
+      const radius = 5 * 3;
 
       // Determine the color based on intensity (which is now a value between 0 and 1).
       let red, green;
