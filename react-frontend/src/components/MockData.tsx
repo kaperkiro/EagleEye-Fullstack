@@ -151,38 +151,3 @@ export const heatmapData = {
     generatedAt: "2025-03-17T12:00:00Z",
   },
 };
-
-export const larmZones = {
-  larmZones: [
-    {
-      id: 1,
-      name: "Zone A",
-      corners: {
-        topLeft: { x: 10, y: 10 },
-        topRight: { x: 30, y: 10 },
-        bottomRight: { x: 30, y: 30 },
-        bottomLeft: { x: 10, y: 30 },
-      },
-    },
-    {
-      id: 2,
-      name: "Zone B",
-      corners: {
-        topLeft: { x: 40, y: 15 },
-        topRight: { x: 60, y: 15 },
-        bottomRight: { x: 60, y: 35 },
-        bottomLeft: { x: 40, y: 35 },
-      },
-    },
-    {
-      id: 3,
-      name: "Zone C",
-      corners: {
-        topLeft: { x: 20, y: 40 },
-        topRight: { x: 50, y: 40 },
-        bottomRight: { x: 50, y: 60 },
-        bottomLeft: { x: 20, y: 60 },
-      },
-    },
-  ],
-};

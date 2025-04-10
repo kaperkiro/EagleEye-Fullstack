@@ -61,7 +61,10 @@
 .button-container button:not(:first-child) {
   margin-left: 8vh;
 }
-
+.toggle-button:hover {
+  background-color: #bab8c6;
+  color: #1a202c;
+}
 /* Active button styling */
 .toggle-button.active {
   background-color: #3b82f6;

@@ -29,6 +29,7 @@
 }
 
 .heatMapButton {
+  background-color: white;
   border: solid black;
   width: 12vw;
   height: 6.5vh;
@@ -36,7 +37,10 @@
   font-size: 24px;
   border-radius: 2.5vh;
 }
-
+.heatMapButton:hover {
+  background-color: #bab8c6;
+  color: #1a202c;
+}
 .heatMapButton.active {
   background-color: #3b82f6;
   color: white;

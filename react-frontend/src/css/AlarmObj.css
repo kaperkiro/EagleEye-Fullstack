@@ -1,0 +1,17 @@
+.staticMapObj {
+  position: absolute;
+  width: 1.7vh;
+  height: 1.7vh;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background-color: #3b82f6;
+  border: 0.25vh solid;
+  z-index: 1;
+  cursor: pointer;
+}
+.ObjmapDiv {
+  flex: 1; /* take up all remaining space */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
