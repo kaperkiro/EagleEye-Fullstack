@@ -6,8 +6,11 @@ from server import run_flask_server
 import threading
 import time
 import logging
+from camera import Camera, clear_streams
 
 logger = logging.getLogger(__name__)
+
+
 
 
 class Application:
@@ -16,6 +19,7 @@ class Application:
         self.db = Database()
         self.mqtt_client = MqttClient()
         self.running = True
+        self.cameras = []
 
     def run(self):
         try:
@@ -27,10 +31,20 @@ class Application:
             self.mqtt_client.start_background_loop()
 
             logger.info("Starting Flask server")
+
+            #Clear all streams from config.json and add cameras
+            clear_streams()
+            # Add cameras to config.json
+            test_cam = Camera("camera1")
+            test_cam.configure_camera(15.00001, 16.00002, 100, 61)
+            
+            self.cameras.append(test_cam)
+            
             # Start the Flask server in a separate thread
             threading.Thread(target=run_flask_server, args=(self.mqtt_client,)).start()
             logger.info("Starting Flask server")
             logger.info("Starting RTSP to WebRTC server")
+            # Create camera objects add them to config 
             start_rtsp_to_webrtc()
 
             while self.running:
