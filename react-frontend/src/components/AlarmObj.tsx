@@ -22,7 +22,6 @@ export const FloorPlanStaticObjects: React.FC = () => {
       <img
         src={FloorPlan}
         alt="Floor Plan"
-        style={{ width: "100%", height: "100%" }}
       />
       {objects.map((obj) => (
         // Render each object as a non-clickable dot
