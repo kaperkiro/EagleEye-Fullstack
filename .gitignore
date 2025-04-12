@@ -60,3 +60,6 @@ core
 frames
 test
 hls/
+
+# Keep the following files in the repository
+!logo_no_text.png

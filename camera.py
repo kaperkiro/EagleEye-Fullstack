@@ -26,24 +26,20 @@ class Camera:
         self,
         id: str = "camera1",
         geocoords: tuple = (0, 0),
-        ip: str = "192.168.0.93"
+        ip: str = "192.168.0.93",
+        config: DeviceConfig = None,
         ):
         self.id = id 
         self.ip = ip
         self.geocoords = geocoords
+        self.config = DeviceConfig(self.ip, "student", "student_pass", verify_ssl=False) if config is None else config
         self._add_to_config() 
         
     #    self._set_cameras_geocoords() 
         
     def configure_camera(self, lat: float , lon :float, inst_height: float, heading: float, tilt: float = 0, roll: float = 0) -> None:
         """Configure the camera settings using curl commands."""
-        config = DeviceConfig(
-            self.ip,
-            "student",
-            "student_pass",
-            verify_ssl=False
-        )
-        with Client(config) as client:
+        with Client(self.config) as client:
             client.geocoordinates.set_location(
                 lat,
                 lon,
@@ -61,6 +57,23 @@ class Camera:
 
             self.geocoords = (lat, lon)
             print(f"Camera: ${self.id} configured successfully")
+
+    def save_snapshot(self):
+        """Save a snapshot from the camera."""
+        assets_dir = os.path.dirname(os.path.abspath(__file__))
+        assets_dir = os.path.join(assets_dir, "assets")
+        if not os.path.exists(assets_dir):
+            os.makedirs(assets_dir)
+        os.chdir(assets_dir)
+        
+        with Client(self.config) as client:
+            snapshot = client.media.get_snapshot("1920x1080", 0, 0)
+            if snapshot:
+                with open(f"{self.id}_snapshot.jpg", "wb") as f:
+                    f.write(snapshot)
+                print(f"Snapshot saved as {self.id}_snapshot.jpg")
+            else:
+                print("Failed to save snapshot")
             
         
         

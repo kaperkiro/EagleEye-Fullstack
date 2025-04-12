@@ -7,11 +7,9 @@ import threading
 import time
 import logging
 from camera import Camera, clear_streams
+from calibration import Calibration
 
 logger = logging.getLogger(__name__)
-
-
-
 
 class Application:
     def __init__(self):
@@ -36,7 +34,10 @@ class Application:
             clear_streams()
             # Add cameras to config.json
             test_cam = Camera("camera1")
-            test_cam.configure_camera(15.00001, 16.00002, 100, 61)
+            # test_cam.configure_camera(15.00001, 16.00002, 100, 61)
+            test_cam.save_snapshot()
+
+            Calibration(test_cam.id)
             
             self.cameras.append(test_cam)
             
