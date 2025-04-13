@@ -10,10 +10,11 @@ from mqtt_client import MqttClient
 
 # Updated FloorplanGUI class to integrate MQTT
 class Calibration:
-    def __init__(self, camera_id):
-        self.camera_id = camera_id
+    def __init__(self, camera, mqtt_client):
+        self.mqtt_client = mqtt_client
+        self.camera = camera
         self.root = tk.Tk()
-        self.root.title("EagleEye Calibration Tool - ({})".format(self.camera_id))
+        self.root.title("EagleEye Calibration Tool - ({})".format(self.camera.id))
         
         try:
             # Load the icon image (use a .png or .gif file)
@@ -161,6 +162,9 @@ class Calibration:
 
     def load_images(self):
         """Load the camera screenshot and floor plan image from the root folder."""
+
+        self.camera.save_snapshot()  # Save a snapshot from the camera
+
         root_dir = os.path.dirname(os.path.abspath(__file__))
         self.calibrate_button.config(text="Calibrate (Mark Points)")
         self.track_button.config(state=tk.DISABLED)
@@ -168,7 +172,7 @@ class Calibration:
         root_dir = os.path.join(root_dir, "assets")
 
         # Look for camera screenshot and floor plan in the root folder
-        camera_files = [f for f in os.listdir(root_dir) if self.camera_id in f.lower() and f.endswith((".png", ".jpg", ".jpeg"))]
+        camera_files = [f for f in os.listdir(root_dir) if self.camera.id in f.lower() and f.endswith((".png", ".jpg", ".jpeg"))]
         floorplan_files = [f for f in os.listdir(root_dir) if "floor" in f.lower() and f.endswith((".png", ".jpg", ".jpeg"))]
 
         if not camera_files or not floorplan_files:
@@ -395,6 +399,7 @@ class Calibration:
 
             except Exception as e:
                 print(f"Failed to map point: {str(e)}")
+                
 
     def start_tracking(self):
         """Start tracking by continuously processing MQTT data."""
@@ -409,8 +414,7 @@ class Calibration:
             if not self.is_tracking:
                 return
             # Fetch the latest detections from the MQTT client
-            # camera_id = 1  # TODO: FIX HARD CODED CAMERA ID
-            camera_data = self.mqtt_client.get_detections(self.camera_id)
+            camera_data = self.mqtt_client.get_detections(self.camera.id)  # Assuming get_detections() returns the latest data
             if camera_data:
                 self.process_camera_data(camera_data)
             self.root.after(100, update)  # Update every 100ms
@@ -420,11 +424,3 @@ class Calibration:
 
         # Update instructions
         self.instruction_label.config(text="Tracking started. Receiving MQTT data...")
-
-
-if __name__ == "__main__":
-#     # Create the GUI
-    # root = tk.Tk()
-    # app = Calibration(root)
-    # root.mainloop()
-    app = Calibration()

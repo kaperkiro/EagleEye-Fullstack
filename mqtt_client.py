@@ -33,13 +33,11 @@ class MqttClient:
         self, client: mqtt.Client, userdata: Any, msg: mqtt.MQTTMessage
     ) -> None:
         try:
-            camera_id = 1  # TODO: FIX HARD CODED CAMERA ID
+            camera_id = "camera1"  # TODO: FIX HARD CODED CAMERA ID
             payload = json.loads(msg.payload.decode())
             frame_data = payload.get("frame", {})
             self.detections[camera_id] = frame_data.get("observations", [])
             try:
-                # {'frame': {'observations': [{'geoposition': {'latitude': ..., 'longitude': ...}}]}}
-                # Gets
                 data = payload["frame"]["observations"]
                 coords = []
                 for obs in data:
@@ -50,7 +48,7 @@ class MqttClient:
                                 obs["geoposition"]["longitude"],
                             )
                         )
-
+                # print(data)
             except (KeyError, IndexError) as e:
                 print(f"Error extracting coordinates: {e}")
                 coords = None

@@ -28,26 +28,23 @@ class Application:
             self.mqtt_client.connect()
             self.mqtt_client.start_background_loop()
 
-            logger.info("Starting Flask server")
-
-            #Clear all streams from config.json and add cameras
+            #Clear all streams from config.json
             clear_streams()
+
             # Add cameras to config.json
             test_cam = Camera("camera1")
-            # test_cam.configure_camera(15.00001, 16.00002, 100, 61)
-            test_cam.save_snapshot()
 
-            Calibration(test_cam.id)
+            logger.info("Starting RTSP to WebRTC server")
+            threading.Thread(target=start_rtsp_to_webrtc).start()
+            
+            logger.info("Starting Flask server")
+            threading.Thread(target=run_flask_server, args=(self.mqtt_client, )).start()
+
+            logger.info("Starting camera configuration")
+            Calibration(test_cam, self.mqtt_client)
             
             self.cameras.append(test_cam)
             
-            # Start the Flask server in a separate thread
-            threading.Thread(target=run_flask_server, args=(self.mqtt_client,)).start()
-            logger.info("Starting Flask server")
-            logger.info("Starting RTSP to WebRTC server")
-            # Create camera objects add them to config 
-            start_rtsp_to_webrtc()
-
             while self.running:
                 time.sleep(1)
 
