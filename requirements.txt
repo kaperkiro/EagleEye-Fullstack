@@ -1,4 +1,11 @@
-mosquitto
 opencv-python
 flask
 paho-mqtt
+aiortc
+aiohttp
+ax-devil-device-api
+tk
+flask-cors
+numpy
+pillow
+requests
