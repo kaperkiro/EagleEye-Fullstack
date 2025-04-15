@@ -68,6 +68,33 @@ export const LarmData = () => {
     return { topLeft, bottomRight, active: true, triggered: false };
   };
 
+  const changeAlarmStatus = (id: string) => {
+    fetch(`${BACKEND_URL}/api/alarms/status/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to update alarm");
+        }
+        return response.json();
+      })
+      .then((result) => {
+        console.log("Backend response:", result); // Likely just a message
+        // Toggle the 'active' property locally
+        setAlarms((prevAlarms) =>
+          prevAlarms.map((alarm) =>
+            alarm.id === id ? { ...alarm, active: !alarm.active } : alarm
+          )
+        );
+      })
+      .catch((error) => {
+        console.error("Error updating alarm:", error);
+      });
+  };
+
   // Save a new alarm zone via a POST call to the backend.
   // Notice that we send an object without an id.
   const saveAlarmZone = (newAlarm: Omit<AlarmZone, "id">) => {
@@ -218,17 +245,20 @@ export const LarmData = () => {
               }}
             />
           )}
-
           {/* Render all saved alarm zones */}
           {alarms.map((zone) => (
             <div
               key={zone.id}
               // In Remove Zone mode, clicking a zone triggers deletion.
               onClick={
-                activeIndexLB === 1
+                activeIndexLB === 1 || activeIndexLB === 2
                   ? (e) => {
                       e.stopPropagation();
-                      handleRemoveZone(zone.id);
+                      if (activeIndexLB === 1) {
+                        handleRemoveZone(zone.id);
+                      } else if (activeIndexLB === 2) {
+                        changeAlarmStatus(zone.id);
+                      }
                     }
                   : undefined
               }
@@ -238,9 +268,14 @@ export const LarmData = () => {
                 top: `${zone.topLeft.y}%`,
                 width: `${zone.bottomRight.x - zone.topLeft.x}%`,
                 height: `${zone.bottomRight.y - zone.topLeft.y}%`,
-                backgroundColor: "rgba(144,238,144,0.5)",
-                pointerEvents: activeIndexLB === 1 ? "auto" : "none",
-                border: "2px dashed green",
+                backgroundColor:
+                  zone.active === true
+                    ? "rgba(144,238,144,0.5)"
+                    : "rgb(105,105,105, 0.5)",
+                pointerEvents:
+                  activeIndexLB === 1 || activeIndexLB === 2 ? "auto" : "none",
+                border:
+                  zone.active === true ? "2px dashed green" : "2px dashed gray",
               }}
             />
           ))}

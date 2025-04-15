@@ -1,6 +1,7 @@
 // src/map_obj.tsx
 import React, { useState, useEffect } from "react";
-import FloorPlan from "../assets/floor_plan.jpg";
+//import FloorPlan from "../assets/floor_plan.jpg";
+import { useFloorPlan } from "./floorPlanProvider";
 import { mock_obj_data } from "./MockData";
 import { objHistoryMock } from "./MockData";
 import "../css/MapObj.css";
@@ -60,6 +61,7 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
 }) => {
   // Use state to store the object data
   const [objects, setObjects] = useState(mock_obj_data.objects);
+  const imageUrl = useFloorPlan(); // Get the pre-fetched image URL
 
   //Real object
   //const [objects, setObjects] = useState<MapObject[]>([]);
@@ -115,7 +117,7 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
   return (
     <div className="ObjmapDiv">
       <img
-        src={FloorPlan}
+        src={imageUrl}
         alt="Floor Plan"
         style={{ width: "100%", height: "100%" }}
       />

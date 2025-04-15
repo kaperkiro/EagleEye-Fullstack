@@ -1,13 +1,12 @@
 // src/StaticMapObj.tsx
 import React, { useState, useEffect } from "react";
-import FloorPlan from "../assets/floor_plan.jpg";
+import { useFloorPlan } from "./floorPlanProvider.tsx"; // adjust the path as necessary
 import { mock_obj_data } from "./MockData";
 import "../css/AlarmObj.css";
 
-// This component simply renders the objects on the floor plan without click behavior or history lines.
 export const FloorPlanStaticObjects: React.FC = () => {
-  // Store and update the objects periodically
   const [objects, setObjects] = useState(mock_obj_data.objects);
+  const imageUrl = useFloorPlan(); // Get the pre-fetched image URL
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -19,12 +18,13 @@ export const FloorPlanStaticObjects: React.FC = () => {
 
   return (
     <div className="ObjmapDiv">
-      <img
-        src={FloorPlan}
-        alt="Floor Plan"
-      />
+      {imageUrl ? (
+        <img src={imageUrl} alt="Floor Plan" />
+      ) : (
+        <div>Loading floor plan...</div>
+      )}
+
       {objects.map((obj) => (
-        // Render each object as a non-clickable dot
         <div
           key={obj.id}
           className="staticMapObj"

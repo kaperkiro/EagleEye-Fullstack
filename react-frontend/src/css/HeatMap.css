@@ -45,3 +45,16 @@
   background-color: #3b82f6;
   color: white;
 }
+.floorpPlanDiv {
+  position: relative;
+  width: 75vw; /* Fixed width relative to viewport height */
+  height: 85vh; /* Fixed height relative to viewport height */
+  overflow: hidden;
+  margin: 0 auto; /* Center the container if desired */
+}
+
+.floorpPlanDiv img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill; /* Ensures the image stretches to fill the container */
+}

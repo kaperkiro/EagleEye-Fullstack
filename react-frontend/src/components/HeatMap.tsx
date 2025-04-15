@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import FloorPlan from "../assets/floor_plan.jpg";
 import { heatmapData } from "./MockData";
+import { useFloorPlan } from "./floorPlanProvider";
 import "../css/HeatMap.css";
 
 const FloorPlanWithHeatmap = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const imageUrl = useFloorPlan();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -64,22 +65,8 @@ const FloorPlanWithHeatmap = () => {
   }, []);
 
   return (
-    <div
-      style={{
-        position: "relative",
-        width: "100%",
-        height: "100%",
-      }}
-    >
-      <img
-        src={FloorPlan}
-        alt="Floor Plan"
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "block",
-        }}
-      />
+    <div className="floorpPlanDiv">
+      <img src={imageUrl} alt="Floor Plan" />
       {/* Canvas overlay: pointerEvents: "none" so it doesn't block clicks */}
       <canvas
         ref={canvasRef}
