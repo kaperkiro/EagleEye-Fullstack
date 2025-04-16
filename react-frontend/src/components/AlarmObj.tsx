@@ -1,18 +1,30 @@
-// src/StaticMapObj.tsx
 import React, { useState, useEffect } from "react";
-import { useFloorPlan } from "./floorPlanProvider.tsx"; // adjust the path as necessary
+import { useFloorPlan } from "./floorPlanProvider.tsx";
 import { mock_obj_data } from "./MockData";
 import "../css/AlarmObj.css";
 
+/**
+ * Displays the static floorplan image with buttons representing objects seen by cameras.
+ *Position of objects are depending on the geological positions of the map and objects.
+ *
+ * @returns
+ */
+
 export const FloorPlanStaticObjects: React.FC = () => {
+  // State for mock object positions
   const [objects, setObjects] = useState(mock_obj_data.objects);
-  const imageUrl = useFloorPlan(); // Get the pre-fetched image URL
+  // Get the pre-fetched floor plan image URL from context
+  const imageUrl = useFloorPlan();
 
   useEffect(() => {
+    /**
+     * Simulate polling data by refreshing the mock object list every 500ms.
+     * Replace with actual API call when integrating backend.
+     */
     const interval = setInterval(() => {
-      // Update with the same mock data – replace with API call if needed
       setObjects(mock_obj_data.objects);
     }, 500);
+    // Cleanup interval on component unmount
     return () => clearInterval(interval);
   }, []);
 

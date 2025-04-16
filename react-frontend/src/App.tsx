@@ -6,14 +6,25 @@ import LarmData from "./components/Alarms";
 import "./css/App.css";
 import { FloorPlanProvider } from "./components/floorPlanProvider.tsx";
 
+/**
+ * Main application for the frontend
+ * Displays the header with navigation buttons and conditionally
+ * renders data inside of the main content.
+ * Either liveview, Hisorical heatmap or Alarms data
+ */
 function App() {
   const [activeIndex, setActiveIndex] = useState(0);
 
+  /**
+   * Handles button click in the header and sets acitve index
+   * depending on the button index.
+   *  @param {number} index - Index of the selected view (0 = LiveView, 1 = HeatMap, 2 = Alarms)
+   */
   const handleButtonClick = (index: number) => {
-    console.log("Button clicked!", index);
     setActiveIndex(index);
   };
 
+  //Display the main data depending on the active index.
   let SiteData;
   if (activeIndex === 0) {
     SiteData = <LiveViewData />;
@@ -53,7 +64,7 @@ function App() {
             </button>
           </div>
         </header>
-        {/* Main Content */}
+        {/* Renders selected data content*/}
         {SiteData}
       </div>
     </FloorPlanProvider>
