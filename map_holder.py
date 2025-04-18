@@ -2,7 +2,7 @@ import math
 import numpy as np
 
 
-class map_holder:
+class MapManager:
     def __init__(self, name: str, corner_coords: list, file_path: str):
         """Holds the current map used in the frontend to convert to relative xy coordinates
         instead of absolute geocoordinates.

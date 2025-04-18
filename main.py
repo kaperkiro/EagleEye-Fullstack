@@ -8,7 +8,7 @@ import time
 import logging
 from camera import Camera, clear_streams
 from calibration import Calibration
-from map_holder import map_holder
+from map_holder import MapManager
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class Application:
         try:
 
             # Initialize the map holder
-            map_hol = map_holder(
+            map_hol = MapManager(
                 "Local House",
                 [
                     (59.3250, 18.0700),

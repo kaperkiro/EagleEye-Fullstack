@@ -4,7 +4,7 @@
     Status: Currently passing all tests.
     """
 import unittest
-from map_holder import map_holder
+from map_holder import MapManager
 
 
 class TestMapConverter(unittest.TestCase):

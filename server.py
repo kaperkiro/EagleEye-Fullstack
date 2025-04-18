@@ -9,7 +9,7 @@ import logging
 
 # Import your MqttClient class
 from mqtt_client import MqttClient
-from map_holder import map_holder
+from map_holder import MapManager
 
 logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
@@ -132,7 +132,7 @@ def get_map():
         return jsonify({"message": "Map file not found"}), 404
 
 
-def run_flask_server(mqtt_client_instance: MqttClient, map_holder_instance: map_holder):
+def run_flask_server(mqtt_client_instance: MqttClient, map_holder_instance: MapManager):
     global mqtt_client
     mqtt_client = mqtt_client_instance
     global map_hol
