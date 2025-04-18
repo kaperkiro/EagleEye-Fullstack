@@ -1,4 +1,5 @@
 import math
+import numpy as np
 
 
 class Map:
@@ -28,7 +29,7 @@ class Map:
 
         Returns:
             tuple: (u, v) relative coordinates in [0..100] for x and y,
-                   where (0,0)=TL, (100,100)=BR
+                where (0,0)=TL, (100,100)=BR
         """
         tl, bl, tr, br = self.corner_coords
         lat0, lon0 = tl  # origin at top-left
@@ -40,24 +41,23 @@ class Map:
             """Project lat/lon to local x,y in meters."""
             dx = (lon - lon0) * M_PER_DEG_LON
             dy = (lat - lat0) * M_PER_DEG_LAT
-            return dx, dy
+            return np.array([dx, dy])
 
-        tr_x, tr_y = to_xy(*tr)
-        bl_x, bl_y = to_xy(*bl)
-        p_x, p_y = to_xy(*coords)
+        vec_p = to_xy(*coords)
+        vec_tr = to_xy(*tr)
+        vec_bl = to_xy(*bl)
 
-        b_x, b_y = tr_x, tr_y
-        d_x, d_y = bl_x, bl_y
+        basis = np.column_stack([vec_tr, vec_bl])
 
-        denom = b_x * d_y - b_y * d_x
-        if abs(denom) < 1e-8:
+        if np.abs(np.linalg.det(basis)) < 1e-8:
             raise ValueError(
                 "Invalid corner coordinates: area too small or corners are collinear."
             )
 
-        x = (p_x * d_y - p_y * d_x) / denom
-        y = (b_x * p_y - b_y * p_x) / denom
-        x = round(x * 100, 2)  # scale to [0..100]
-        y = round(y * 100, 2)
+        # Solve for the relative coordinates in the new basis
+        uv = np.linalg.solve(basis, vec_p)
 
-        return (x, y)
+        # Scale to [0, 100] and round
+        u, v = np.round(uv * 100, 2)
+
+        return (u, v)
