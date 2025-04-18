@@ -124,15 +124,17 @@ def get_camera_detections(camera_id):
         return jsonify({"message": "MQTT client not available"}), 503
 
 
-@app.route("/api/map")
+@app.route("/map")
 def get_map():
     if os.path.exists(map_manager.file_path):
-        return send_file(map_manager.file_path, mimetype="image/jpeg")
+        return send_file(map_manager.file_path)
     else:
         return jsonify({"message": "Map file not found"}), 404
 
 
-def run_flask_server(mqtt_client_instance: MqttClient, map_manager_instance: MapManager):
+def run_flask_server(
+    mqtt_client_instance: MqttClient, map_manager_instance: MapManager
+):
     global mqtt_client
     mqtt_client = mqtt_client_instance
     global map_manager
@@ -143,4 +145,16 @@ def run_flask_server(mqtt_client_instance: MqttClient, map_manager_instance: Map
 
 
 if __name__ == "__main__":
-    run_flask_server(MqttClient())
+    # Initialize the map holder
+    map_hol = MapManager(
+        "Local House",
+        [
+            (59.3250, 18.0700),
+            (59.3240, 18.0700),
+            (59.3250, 18.0710),
+            (59.3240, 18.0710),
+        ],
+        "test_map.png",
+    )
+
+    run_flask_server(MqttClient(), map_hol)
