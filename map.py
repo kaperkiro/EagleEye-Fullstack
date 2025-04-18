@@ -30,11 +30,9 @@ class Map:
             tuple: (u, v) relative coordinates in [0..100] for x and y,
                    where (0,0)=TL, (100,100)=BR
         """
-        # Unpack corner coordinates
         tl, bl, tr, br = self.corner_coords
         lat0, lon0 = tl  # origin at top-left
 
-        # Precompute local scale factors (meters per degree)
         M_PER_DEG_LAT = 110_574  # approx meters per degree latitude
         M_PER_DEG_LON = 111_320 * math.cos(math.radians(lat0))  # adjust by cos(lat)
 
@@ -48,8 +46,8 @@ class Map:
         bl_x, bl_y = to_xy(*bl)
         p_x, p_y = to_xy(*coords)
 
-        b_x, b_y = tr_x, tr_y  # vector TL->TR
-        d_x, d_y = bl_x, bl_y  # vector TL->BL
+        b_x, b_y = tr_x, tr_y
+        d_x, d_y = bl_x, bl_y
 
         denom = b_x * d_y - b_y * d_x
         if abs(denom) < 1e-8:
@@ -59,7 +57,7 @@ class Map:
 
         x = (p_x * d_y - p_y * d_x) / denom
         y = (b_x * p_y - b_y * p_x) / denom
-        x = round(x * 100, 3)  # scale to [0..100]
+        x = round(x * 100, 2)  # scale to [0..100]
         y = round(y * 100, 2)
 
         return (x, y)
