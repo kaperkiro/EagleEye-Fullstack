@@ -2,16 +2,19 @@ import math
 import numpy as np
 
 
-class Map:
+class map_holder:
     def __init__(self, name: str, corner_coords: list, file_path: str):
         """Holds the current map used in the frontend to convert to relative xy coordinates
         instead of absolute geocoordinates.
+
+        TODO: Make the backend hold the map...
 
         Args:
             name (str): name of the map
             corner_coords (list): list of corner coordinates of the map in the format [tl, bl, tr, br]
                 where tl = top left, bl = bottom left, tr = top right, br = bottom right. Example:
                 corner_coords = [(lat1, lon1), (lat2, lon2), (lat3, lon3), (lat4, lon4)]
+                Technically br is not needed
             file_path (str): filepath of the image file of the map
         """
         self.name = name
@@ -61,3 +64,7 @@ class Map:
         u, v = np.round(uv * 100, 2)
 
         return (u, v)
+
+    def return_map(self):
+        """Return the map object."""
+        return self

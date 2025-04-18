@@ -8,8 +8,10 @@ import time
 import logging
 from camera import Camera, clear_streams
 from calibration import Calibration
+from map_holder import map_holder
 
 logger = logging.getLogger(__name__)
+
 
 class Application:
     def __init__(self):
@@ -21,6 +23,19 @@ class Application:
 
     def run(self):
         try:
+
+            # Initialize the map holder
+            map_hol = map_holder(
+                "Local House",
+                [
+                    (59.3250, 18.0700),
+                    (59.3240, 18.0700),
+                    (59.3250, 18.0710),
+                    (59.3240, 18.0710),
+                ],
+                "test_map.png",
+            )
+
             logger.info("Starting MQTT broker")
             self.broker.start()
 
@@ -28,7 +43,7 @@ class Application:
             self.mqtt_client.connect()
             self.mqtt_client.start_background_loop()
 
-            #Clear all streams from config.json
+            # Clear all streams from config.json
             clear_streams()
 
             # Add cameras to config.json
@@ -36,15 +51,17 @@ class Application:
 
             logger.info("Starting RTSP to WebRTC server")
             threading.Thread(target=start_rtsp_to_webrtc).start()
-            
+
             logger.info("Starting Flask server")
-            threading.Thread(target=run_flask_server, args=(self.mqtt_client, )).start()
+            threading.Thread(
+                target=run_flask_server, args=(self.mqtt_client, map_hol)
+            ).start()
 
             logger.info("Starting camera configuration")
             Calibration(test_cam, self.mqtt_client)
-            
+
             self.cameras.append(test_cam)
-            
+
             while self.running:
                 time.sleep(1)
 

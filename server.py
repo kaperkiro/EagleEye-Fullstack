@@ -5,8 +5,11 @@ import uuid
 import json
 import logging
 
+# Removed invalid import statement. If 'map' is a custom module, use 'import map'.
+
 # Import your MqttClient class
 from mqtt_client import MqttClient
+from map_holder import map_holder
 
 logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
@@ -17,6 +20,9 @@ MAP_PATH = "map.jpg"
 
 global mqtt_client
 mqtt_client = None
+
+global map_hol
+map_hol = None
 
 
 def load_alarms():
@@ -120,15 +126,18 @@ def get_camera_detections(camera_id):
 
 @app.route("/map")
 def get_map():
-    if os.path.exists(MAP_PATH):
-        return send_file(MAP_PATH, mimetype="image/jpeg")
+    if os.path.exists(map_hol.file_path):
+        return send_file(map_hol.file_path, mimetype="image/jpeg")
     else:
         return jsonify({"message": "Map file not found"}), 404
 
 
-def run_flask_server(mqtt_client_instance: MqttClient):
+def run_flask_server(mqtt_client_instance: MqttClient, map_holder_instance: map_holder):
     global mqtt_client
     mqtt_client = mqtt_client_instance
+    global map_hol
+    map_hol = map_holder_instance
+
     logging.info("Starting Flask server...")
     app.run(debug=True, port=5001, use_reloader=False, host="0.0.0.0")
 

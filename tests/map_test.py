@@ -1,8 +1,10 @@
     """
     Unit tests for the Map class in the map module. Doesnt work in current folder... 
+    
+    Status: Currently passing all tests.
     """
 import unittest
-from map import Map
+from map_holder import map_holder
 
 
 class TestMapConverter(unittest.TestCase):
