@@ -1,3 +1,6 @@
+    """
+    Unit tests for the Map class in the map module. Doesnt work in current folder... 
+    """
 import unittest
 from map import Map
 
