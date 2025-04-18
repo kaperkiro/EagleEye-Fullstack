@@ -9,7 +9,7 @@ import logging
 
 # Import your MqttClient class
 from mqtt_client import MqttClient
-from map_holder import MapManager
+from map_manager import MapManager
 
 logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
@@ -108,6 +108,7 @@ def get_alarms():
 
 @app.route("/api/detections/<int:camera_id>", methods=["GET"])
 def get_camera_detections(camera_id):
+    print(f"API request for detections from camera {camera_id}")
     if mqtt_client:
         detections = mqtt_client.get_detections(camera_id)
         position = mqtt_client.position
@@ -124,8 +125,25 @@ def get_camera_detections(camera_id):
         return jsonify({"message": "MQTT client not available"}), 503
 
 
+@app.route("/test", methods=["GET"])
+def test():
+    num = 1
+    print(f"API request for test from camera {num}")
+    if mqtt_client:
+        if mqtt_client.position:
+            x, y = map_manager.convert_to_relative(mqtt_client.position[0])
+            position = [1, x, y]
+            detections = mqtt_client.get_detections(num)
+            return jsonify(
+                {"camera_id": num, "detections": detections, "position": position}
+            )
+        else:
+            return jsonify({"message": "No position data available"}), 503
+
+
 @app.route("/map")
 def get_map():
+    print("Sending map file")
     if os.path.exists(map_manager.file_path):
         return send_file(map_manager.file_path)
     else:
@@ -154,7 +172,11 @@ if __name__ == "__main__":
             (59.3250, 18.0710),
             (59.3240, 18.0710),
         ],
-        "test_map.png",
+        "floor_plan.jpg",
     )
 
-    run_flask_server(MqttClient(), map_hol)
+    mqtt_instance = MqttClient()
+    mqtt_instance.connect()
+    mqtt_instance.start_background_loop()
+
+    run_flask_server(mqtt_instance, map_hol)
