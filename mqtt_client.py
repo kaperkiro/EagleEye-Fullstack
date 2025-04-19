@@ -4,6 +4,11 @@ from typing import List, Dict, Any
 
 
 class MqttClient:
+    """MQTT client for receiving and processing messages from a broker.
+    This class handles the connection to the MQTT broker, subscribes to topics,
+    Hardcoded currently to "axis/frame_metadata" and processes incoming messages.
+    """
+
     def __init__(self, broker_host="localhost", broker_port=1883, keepalive=60):
         self.broker_host = broker_host
         self.broker_port = broker_port

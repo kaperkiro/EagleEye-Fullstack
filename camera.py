@@ -109,6 +109,7 @@ class Camera:
             print("Config file not found")
             return
 
+    @DeprecationWarning
     def _set_cameras_geocoords(self):
         """USE configure_camera() instead. Fetch geocoordinates from the camera using a curl command."""
         result = subprocess.run(

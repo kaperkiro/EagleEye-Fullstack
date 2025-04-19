@@ -77,6 +77,10 @@ def create_alarm_zone():
 
 @app.route("/api/alarms/<string:alarm_id>", methods=["DELETE"])
 def delete_alarm(alarm_id):
+    """
+    DELETE endpoint for removing an alarm zone by its ID.
+
+    """
     alarms = load_alarms()
     new_alarms = [alarm for alarm in alarms if alarm.get("id") != alarm_id]
     if len(new_alarms) == len(alarms):
@@ -88,6 +92,10 @@ def delete_alarm(alarm_id):
 
 @app.route("/api/alarms/status/<string:alarm_id>", methods=["POST"])
 def status_alarm(alarm_id):
+    """
+    POST endpoint for changing the status of an alarm zone by its ID.
+    """
+
     if not alarm_id:
         return jsonify({"message": "No zone included "}), 404
     alarms = load_alarms()
@@ -101,24 +109,42 @@ def status_alarm(alarm_id):
 
 @app.route("/api/alarms", methods=["GET"])
 def get_alarms():
+    """
+    GET endpoint for retrieving all alarm zones.
+    """
     alarms = load_alarms()
     logging.info(f"Loaded {len(alarms)} alarm zones.")
     return jsonify({"alarms": alarms})
 
 
+# TODO Define what camera_id is.
 @app.route("/api/detections/<int:camera_id>", methods=["GET"])
-def get_camera_detections(camera_id):
+def get_camera_detections(camera_id) -> jsonify:
+    """Gets all detections from the camera with the given ID.
+
+    Args:
+        camera_id (_type_): _description_
+
+    Returns:
+        jsonify: _jsonify with the detections from the camera. TODO add example...
+    """
     print(f"API request for detections from camera {camera_id}")
     if mqtt_client:
-        detections = mqtt_client.get_detections(camera_id)
-        x, y = mqtt_client.position
-        position = [camera_id, x, y]
-        logging.info(
-            f"API request for positions from camera {camera_id}, found {len(position)} detections."
-        )
-        return jsonify(
-            {"camera_id": camera_id, "detections": detections, "position": position}
-        )
+        if mqtt_client.position:
+            detections = mqtt_client.get_detections(camera_id)
+            x, y = map_manager.convert_to_relative(mqtt_client.position)
+            position = [camera_id, x, y]
+            logging.info(
+                f"API request for positions from camera {camera_id}, found {len(position)} detections."
+            )
+            return jsonify(
+                {"camera_id": camera_id, "detections": detections, "position": position}
+            )
+        else:
+            logging.warning(
+                f"API request for detections from camera {camera_id}, but no position data available."
+            )
+            return jsonify({"message": "No position data available"}), 503
     else:
         logging.warning(
             f"API request for detections from camera {camera_id}, but MQTT client is not initialized."
@@ -127,7 +153,12 @@ def get_camera_detections(camera_id):
 
 
 @app.route("/test", methods=["GET"])
-def test():
+def test() -> jsonify:
+    """Test endpoint to check if the server is running and to get a test detection.
+    Returns:
+        jsonify: _jsonify with a test detection. Use this with the mock mqtt_pub.py
+    """
+
     num = 1
     print(f"API request for test from camera {num}")
     if mqtt_client:
@@ -144,6 +175,9 @@ def test():
 
 @app.route("/map")
 def get_map():
+    """
+    This endpoint is used to send the map file to the client.
+    """
     print("Sending map file")
     if os.path.exists(map_manager.file_path):
         return send_file(map_manager.file_path)
