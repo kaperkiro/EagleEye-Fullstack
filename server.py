@@ -111,7 +111,8 @@ def get_camera_detections(camera_id):
     print(f"API request for detections from camera {camera_id}")
     if mqtt_client:
         detections = mqtt_client.get_detections(camera_id)
-        position = mqtt_client.position
+        x, y = mqtt_client.position
+        position = [camera_id, x, y]
         logging.info(
             f"API request for positions from camera {camera_id}, found {len(position)} detections."
         )

@@ -9,7 +9,7 @@ class MqttPublisher:
         broker_host="localhost",
         broker_port=1883,
         topic="axis/frame_metadata",
-        publish_interval=1,
+        publish_interval=0.5,
     ):
         self.broker_host = broker_host
         self.broker_port = broker_port
