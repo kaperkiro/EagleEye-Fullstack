@@ -25,7 +25,7 @@ class Camera:
 
     def __init__(
         self,
-        id: str = "camera1",
+        id: int = 1,
         geocoords: tuple = (0, 0),
         ip: str = "192.168.0.93",
         config: DeviceConfig = None,

@@ -119,11 +119,11 @@ def get_alarms():
 
 # TODO Define what camera_id is. Implement using new dictionary in mqtt_client.py
 @app.route("/api/detections/<int:camera_id>", methods=["GET"])
-def get_camera_detections(camera_id) -> jsonify:
+def get_camera_detections(camera_id: int) -> jsonify:
     """Gets all detections from the camera with the given ID.
 
     Args:
-        camera_id (_type_): _description_
+        camera_id (int): gets detections and positions of the camera with the given ID.
 
     Returns:
         jsonify: _jsonify with the detections from the camera. TODO add example...
@@ -149,24 +149,42 @@ def get_camera_detections(camera_id) -> jsonify:
         return jsonify({"message": "MQTT client not available"}), 503
 
 
-def get_camera_detections_by_id(camera_id) -> jsonify:
+@app.route("/api/detections/<int:camera_id>/all", methods=["GET"])
+def get_camera_detections_by_id(camera_id: int) -> jsonify:
     """Gets all detections from the camera with the given ID.
 
-    Args:
-        camera_id (_type_):
+     Args:
+        camera_id (int): gets detections and positions of the camera with the given ID.
+
 
     Returns:
         jsonify: _jsonify with the detections from the camera. TODO add example...
     """
-    print(f"API request for detections from camera {camera_id}")
-    if mqtt_client:
-        if mqtt_client.dict_position:
-            detections = mqtt_client.get_detections(camera_id)
-            x, y = map_manager.convert_to_relative(mqtt_client.dict_position[camera_id])
-            position = [camera_id, x, y]
-            return jsonify(
-                {"camera_id": camera_id, "detections": detections, "position": position}
+    try:
+        if mqtt_client:
+            if mqtt_client.dict_position != {}:
+                detections = mqtt_client.get_detections(camera_id)
+                x, y = map_manager.convert_to_relative(
+                    mqtt_client.dict_position[camera_id][0]
+                )
+                position = [1, x, y]
+                return jsonify(
+                    {
+                        "camera_id": camera_id,
+                        "detections": detections,
+                        "position": position,
+                    }
+                )
+        else:
+            logging.warning(
+                f"API request for detections from camera {camera_id}, but MQTT client is not initialized."
             )
+            return jsonify({"message": "MQTT client not available"}), 503
+    except KeyError:
+        logging.warning(
+            f"API request for detections from camera {camera_id}, but no position data available."
+        )
+        return jsonify({"message": "No position data available"}), 503
 
 
 @app.route("/test", methods=["GET"])
@@ -216,7 +234,7 @@ def run_flask_server(
 
 if __name__ == "__main__":
     # Initialize the map holder
-    map_hol = MapManager(
+    map_instance = MapManager(
         "Local House",
         [
             (59.3250, 18.0700),
@@ -231,4 +249,4 @@ if __name__ == "__main__":
     mqtt_instance.connect()
     mqtt_instance.start_background_loop()
 
-    run_flask_server(mqtt_instance, map_hol)
+    run_flask_server(mqtt_instance, map_instance)

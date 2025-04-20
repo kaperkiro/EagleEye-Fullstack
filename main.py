@@ -47,7 +47,7 @@ class Application:
             clear_streams()
 
             # Add cameras to config.json
-            test_cam = Camera("camera1")
+            test_cam = Camera()
 
             logger.info("Starting RTSP to WebRTC server")
             threading.Thread(target=start_rtsp_to_webrtc).start()
