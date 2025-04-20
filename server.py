@@ -117,7 +117,7 @@ def get_alarms():
     return jsonify({"alarms": alarms})
 
 
-# TODO Define what camera_id is.
+# TODO Define what camera_id is. Implement using new dictionary in mqtt_client.py
 @app.route("/api/detections/<int:camera_id>", methods=["GET"])
 def get_camera_detections(camera_id) -> jsonify:
     """Gets all detections from the camera with the given ID.
@@ -134,9 +134,6 @@ def get_camera_detections(camera_id) -> jsonify:
             detections = mqtt_client.get_detections(camera_id)
             x, y = map_manager.convert_to_relative(mqtt_client.position)
             position = [camera_id, x, y]
-            logging.info(
-                f"API request for positions from camera {camera_id}, found {len(position)} detections."
-            )
             return jsonify(
                 {"camera_id": camera_id, "detections": detections, "position": position}
             )

@@ -75,11 +75,13 @@ class MqttClient:
                                 obs["geoposition"]["longitude"],
                             )
                         )
+
                         print(self.dict_position[camera_id])
             except (KeyError, IndexError) as e:
                 print(f"Error extracting coordinates: {e}")
                 coords = None
             if coords:
+                # Will this ever not happen?
                 self.position = coords
         except (json.JSONDecodeError, ValueError) as e:
             print(f"Failed to parse MQTT message: {e}")
