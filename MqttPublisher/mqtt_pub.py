@@ -64,8 +64,8 @@ class MqttPublisher:
                             "upper_clothing_colors": [{"name": "White", "score": 0.75}],
                         },
                         "geoposition": {
-                            "latitude": self.current_coords[0] + 0.001,
-                            "longitude": self.current_coords[1] - 0.001,
+                            "latitude": self.current_coords[0] - 0.00001,
+                            "longitude": self.current_coords[1] + 0.00001,
                         },
                         "timestamp": "2025-04-02T08:18:12.678869Z",
                         "track_id": "30",
@@ -84,8 +84,8 @@ class MqttPublisher:
                             "upper_clothing_colors": [{"name": "Brown", "score": 0.65}],
                         },
                         "geoposition": {
-                            "latitude": self.current_coords[0] - 0.001,
-                            "longitude": self.current_coords[1] + 0.001,
+                            "latitude": self.current_coords[0] + 0.00001,
+                            "longitude": self.current_coords[1] - 0.00001,
                         },
                         "timestamp": "2025-04-02T08:18:12.678869Z",
                         "track_id": "31",

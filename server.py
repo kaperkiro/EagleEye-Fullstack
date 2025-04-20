@@ -158,16 +158,25 @@ def get_camera_detections_by_id(camera_id: int) -> jsonify:
 
 
     Returns:
-        jsonify: _jsonify with the detections from the camera. TODO add example...
+        jsonify: _jsonify with the detections from the camera.
+         eg -
+         {
+            "detections": frame_data["observations"],
+            "position": [{id: int,x: int%, y: int%, camera_id: int},
+            {id: int,x: int%, y: int%, camera_id: int}],
+            ...
+            ...
+            ...
+        }
     """
     try:
         if mqtt_client:
             if mqtt_client.dict_position != {}:
                 detections = mqtt_client.get_detections(camera_id)
-                x, y = map_manager.convert_to_relative(
-                    mqtt_client.dict_position[camera_id][0]
-                )
-                position = [1, x, y]
+                position = []
+                for pos in mqtt_client.dict_position[camera_id]:
+                    x, y = map_manager.convert_to_relative(pos)
+                    position.append({"camera_id": camera_id, "x": x, "y": y})
                 return jsonify(
                     {
                         "camera_id": camera_id,
@@ -175,6 +184,11 @@ def get_camera_detections_by_id(camera_id: int) -> jsonify:
                         "position": position,
                     }
                 )
+            else:
+                logging.warning(
+                    f"API request for detections from camera {camera_id}, but no position data available."
+                )
+                return jsonify({"message": "No position data available"}), 503
         else:
             logging.warning(
                 f"API request for detections from camera {camera_id}, but MQTT client is not initialized."
