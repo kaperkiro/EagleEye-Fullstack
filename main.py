@@ -8,7 +8,7 @@ import time
 import logging
 from camera import Camera, clear_streams
 from calibration import Calibration
-from map_holder import MapManager
+from map_manager import MapManager
 
 logger = logging.getLogger(__name__)
 
