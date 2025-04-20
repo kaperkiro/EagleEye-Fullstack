@@ -70,7 +70,7 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
   const fetchPositionData = async (cameraId: number) => {
     try {
       const response = await fetch(
-        `http://localhost:5001/api/detections/${cameraId}`
+        `http://localhost:5001/api/detections/${cameraId}/all`
       );
       if (!response.ok) {
         let errorMsg = `HTTP error! status: ${response.status} ${response.statusText}`;
@@ -85,16 +85,16 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
       const data: ApiResponse = await response.json();
       console.log(data);
 
-      const mappedObjects: MapObject[] =
-        Array.isArray(data.position) && data.position.length === 3
-          ? [
-              {
-                id: data.position[0],
-                x: data.position[1],
-                y: data.position[2],
-              },
-            ]
-          : [];
+      // Assuming data.position is now an array of position objects:
+      // e.g., [{ id: number, x: number, y: number, camera_id: number }, ...]
+      const mappedObjects: MapObject[] = Array.isArray(data.position)
+        ? data.position.map((pos: any) => ({
+            // Use either pos.id or pos.camera_id here according to what the API sends
+            id: pos.camera_id,
+            x: pos.x,
+            y: pos.y,
+          }))
+        : [];
       console.log("mappedObjects!!!!!:", mappedObjects);
       setObjects(mappedObjects);
     } catch (err) {
@@ -107,8 +107,8 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
     const interval = setInterval(() => {
       // Replace this line with your API call when ready.
       //API call:
-      //fetchPositionData(1);
-      setObjects(mock_obj_data.objects);
+      fetchPositionData(1);
+      //setObjects(mock_obj_data.objects);
     }, 500);
 
     return () => clearInterval(interval);
