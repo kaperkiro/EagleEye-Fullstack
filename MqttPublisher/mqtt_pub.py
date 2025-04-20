@@ -49,7 +49,47 @@ class MqttPublisher:
                         },
                         "timestamp": "2025-04-02T08:18:12.678869Z",
                         "track_id": "29",
-                    }
+                    },
+                    {
+                        "bounding_box": {
+                            "bottom": 0.7257,
+                            "left": 0.3778,
+                            "right": 0.4588,
+                            "top": 0.2986,
+                        },
+                        "class": {
+                            "lower_clothing_colors": [{"name": "Blue", "score": 0.8}],
+                            "score": 0.88,
+                            "type": "Vehicle",
+                            "upper_clothing_colors": [{"name": "White", "score": 0.75}],
+                        },
+                        "geoposition": {
+                            "latitude": self.current_coords[0] + 0.001,
+                            "longitude": self.current_coords[1] - 0.001,
+                        },
+                        "timestamp": "2025-04-02T08:18:12.678869Z",
+                        "track_id": "30",
+                    },
+                    {
+                        "bounding_box": {
+                            "bottom": 0.5157,
+                            "left": 0.5778,
+                            "right": 0.6388,
+                            "top": 0.4986,
+                        },
+                        "class": {
+                            "lower_clothing_colors": [{"name": "Red", "score": 0.7}],
+                            "score": 0.95,
+                            "type": "Animal",
+                            "upper_clothing_colors": [{"name": "Brown", "score": 0.65}],
+                        },
+                        "geoposition": {
+                            "latitude": self.current_coords[0] - 0.001,
+                            "longitude": self.current_coords[1] + 0.001,
+                        },
+                        "timestamp": "2025-04-02T08:18:12.678869Z",
+                        "track_id": "31",
+                    },
                 ],
                 "operations": [],
                 "timestamp": "2025-04-02T08:18:12.678869Z",
