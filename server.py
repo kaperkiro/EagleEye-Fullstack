@@ -149,6 +149,26 @@ def get_camera_detections(camera_id) -> jsonify:
         return jsonify({"message": "MQTT client not available"}), 503
 
 
+def get_camera_detections_by_id(camera_id) -> jsonify:
+    """Gets all detections from the camera with the given ID.
+
+    Args:
+        camera_id (_type_):
+
+    Returns:
+        jsonify: _jsonify with the detections from the camera. TODO add example...
+    """
+    print(f"API request for detections from camera {camera_id}")
+    if mqtt_client:
+        if mqtt_client.dict_position:
+            detections = mqtt_client.get_detections(camera_id)
+            x, y = map_manager.convert_to_relative(mqtt_client.dict_position[camera_id])
+            position = [camera_id, x, y]
+            return jsonify(
+                {"camera_id": camera_id, "detections": detections, "position": position}
+            )
+
+
 @app.route("/test", methods=["GET"])
 def test() -> jsonify:
     """Test endpoint to check if the server is running and to get a test detection.

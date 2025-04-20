@@ -47,44 +47,38 @@ class MqttClient:
         try:
             camera_id = "camera1"  # TODO: FIX HARD CODED CAMERA ID
             payload = json.loads(msg.payload.decode())
+            # Set each uniques cameras observation
             frame_data = payload.get("frame", {})
             self.detections[camera_id] = frame_data.get("observations", [])
+            self.set_positions_from_observations(camera_id, payload)
 
-            try:
-                data = payload["frame"]["observations"]
-                coords = []
-                # clear the list of coordinates for the current camera ID
-                if camera_id in self.dict_position:
-                    self.dict_position[camera_id] = []
-                for obs in data:
-                    if "geoposition" in obs:
-                        # Create key for camera ID if it doesn't exist and update
-                        # the coordinates
-                        if camera_id not in self.dict_position:
-                            self.dict_position[camera_id] = []
-                        self.dict_position[camera_id].append(
-                            (
-                                obs["geoposition"]["latitude"],
-                                obs["geoposition"]["longitude"],
-                            )
-                        )
-
-                        coords.append(
-                            (
-                                obs["geoposition"]["latitude"],
-                                obs["geoposition"]["longitude"],
-                            )
-                        )
-
-                        print(self.dict_position[camera_id])
-            except (KeyError, IndexError) as e:
-                print(f"Error extracting coordinates: {e}")
-                coords = None
-            if coords:
-                # Will this ever not happen?
-                self.position = coords
         except (json.JSONDecodeError, ValueError) as e:
             print(f"Failed to parse MQTT message: {e}")
+
+    def set_positions_from_observations(self, camera_id: str, payload: int) -> None:
+        """Set the positions of the camera from the observations in the payload."""
+        data = payload["frame"]["observations"]
+        coords = []
+        if camera_id in self.dict_position:
+            self.dict_position[camera_id] = []
+        for obs in data:
+            if "geoposition" in obs:
+                # Create key for camera ID if it doesn't exist and update
+                # the coordinates
+                if camera_id not in self.dict_position:
+                    self.dict_position[camera_id] = []
+
+                self.dict_position[camera_id].append(
+                    (
+                        obs["geoposition"]["latitude"],
+                        obs["geoposition"]["longitude"],
+                    )
+                )
+                coords.append(
+                    (obs["geoposition"]["latitude"], obs["geoposition"]["longitude"])
+                )
+        if coords:
+            self.position = coords
 
     def connect(self) -> None:
         self.client.connect(self.broker_host, self.broker_port, self.keepalive)
