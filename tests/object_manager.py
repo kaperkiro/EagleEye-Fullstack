@@ -17,6 +17,12 @@ class GlobalObject:
 
 
 class ObjectManager:
+    """
+    Manages global object tracking across multiple cameras.
+    Each camera can add observations, and the manager will track the objects
+    Will always check if the observations are the same if the same the are not added.
+    """
+
     def __init__(self):
         self.objects: List[GlobalObject] = []
 
@@ -117,5 +123,5 @@ def test_object_manager():
 
 if __name__ == "__main__":
     test_global_object()
-    print("===" * 10)
+    print("<------Testing ObjectManager------>")
     test_object_manager()
