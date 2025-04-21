@@ -5,6 +5,10 @@ from helper import check_if_same_observation
 
 
 class GlobalObject:
+    """ "Represents a global object observed by multiple cameras.
+    Each object has a unique ID and can have multiple observations from different cameras.
+    """
+
     def __init__(self, initial_obs: Dict, camera_id: int):
         self.id = str(uuid.uuid4())
         self.observations: List[Dict] = []
@@ -27,6 +31,13 @@ class ObjectManager:
         self.objects: List[GlobalObject] = []
 
     def add_observations(self, camera_id: int, obs_list: List[Dict]) -> None:
+        """Add observations from a camera to the global object list.
+        If the observation is similar to an existing one, it will be added to that object.
+
+        Args:
+            camera_id (int): ID of the camera
+            obs_list (List[Dict]): List of observations from the camera, each represented as a dictionary
+        """
         for obs in obs_list:
             matched = False
             for obj in self.objects:
@@ -39,6 +50,15 @@ class ObjectManager:
                 self.objects.append(GlobalObject(obs, camera_id))
 
     def get_objects_by_camera(self, camera_id: int) -> List[Dict]:
+        """Get all objects observed by a specific camera.
+
+        Args:
+            camera_id (int): ID of the camera
+
+        Returns:
+            List[Dict]: List of objects observed by the camera, each represented as a dictionary
+            eg [{"id": "1", "class": {...}, "geoposition": {...}]
+        """
         result = []
         for obj in self.objects:
             if camera_id in obj.cameras:
@@ -48,7 +68,28 @@ class ObjectManager:
                         "id": obj.id,
                         "class": last_obs.get("class", {}),
                         "geoposition": last_obs.get("geoposition", {}),
-                        "bounding_box": last_obs.get("bounding_box", {}),
+                    }
+                )
+        return result
+
+    def get_objects_geoposition(self, camera_id: int) -> List[Dict]:
+        """Get all objects observed by a specific camera with only their geocoordinates.
+
+        Args:
+            camera_id (int): ID of the camera
+
+        Returns:
+            List[Dict]: List of objects observed by the camera, each represented as a dictionary
+            eg [{"id": "1", "geoposition": {...}]
+        """
+        result = []
+        for obj in self.objects:
+            if camera_id in obj.cameras:
+                last_obs = obj.observations[-1]
+                result.append(
+                    {
+                        "id": obj.id,
+                        "geoposition": last_obs.get("geoposition", {}),
                     }
                 )
         return result
