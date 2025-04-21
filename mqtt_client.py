@@ -1,6 +1,8 @@
 import paho.mqtt.client as mqtt
 import json
 from typing import List, Dict, Any
+from helper import check_if_same_observation
+from object_manager import ObjectManager
 
 
 class MqttClient:
@@ -16,6 +18,7 @@ class MqttClient:
         self.keepalive = keepalive
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         self.detections: Dict[int, List[Dict]] = {}  # Camera ID -> detections
+        self.object_manager = ObjectManager()
         self._setup_callbacks()
 
         self.dict_position: Dict[int, List[tuple]] = (
@@ -49,7 +52,10 @@ class MqttClient:
             payload = json.loads(msg.payload.decode())
             # Set each uniques cameras observation
             frame_data = payload.get("frame", {})
-            self.detections[camera_id] = frame_data.get("observations", [])
+            observations = frame_data.get("observations", [])
+            self.detections[camera_id] = observations
+            # Update global object tracking
+            self.object_manager.add_observations(camera_id, observations)
             self.set_positions_from_observations(camera_id, frame_data)
 
         except (json.JSONDecodeError, ValueError) as e:
@@ -88,4 +94,5 @@ class MqttClient:
         self.client.disconnect()
 
     def get_detections(self, camera_id: int) -> List[Dict]:
-        return self.detections.get(camera_id, [])
+        # Return globally tracked objects for the camera
+        return self.object_manager.get_objects_by_camera(camera_id)

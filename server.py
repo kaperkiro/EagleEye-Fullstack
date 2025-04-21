@@ -4,6 +4,8 @@ import os
 import uuid
 import json
 import logging
+import threading
+from MqttPublisher.mqtt_pub import MqttPublisher
 
 # Removed invalid import statement. If 'map' is a custom module, use 'import map'.
 
@@ -262,5 +264,10 @@ if __name__ == "__main__":
     mqtt_instance = MqttClient()
     mqtt_instance.connect()
     mqtt_instance.start_background_loop()
+
+    # Start dummy publisher for integrated testing
+    publisher = MqttPublisher()
+    publisher.connect()
+    threading.Thread(target=publisher.run, daemon=True).start()
 
     run_flask_server(mqtt_instance, map_instance)

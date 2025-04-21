@@ -27,6 +27,7 @@ def check_if_same_observation(obs1: dict, obs2: dict) -> bool:
 
     obs1_coords = obs1["geoposition"]
     obs2_coords = obs2["geoposition"]
+
     # Arbiterary distance threshold of 1.5 m
     if (
         abs(obs1_coords["latitude"] - obs2_coords["latitude"]) > max_distance
@@ -38,7 +39,7 @@ def check_if_same_observation(obs1: dict, obs2: dict) -> bool:
     return True
 
 
-if __name__ == "__main__":
+def obs_test():
     # Example usage
     obs1 = {
         "geoposition": {"latitude": 59.3250, "longitude": 18.0700},
@@ -75,11 +76,11 @@ if __name__ == "__main__":
             "lower_clothing_colors": [{"name": "Green", "score": 0.7}],
         },
     }
-    assert check_if_same_observation(obs1, obs2) == True  # Should return True
-    assert (
-        check_if_same_observation(obs1, obs3) == False
-    )  # Should return False Too far away
-    assert (
-        check_if_same_observation(obs1, obs4) == False
-    )  # Should return False different clothes
-    print("All tests passed!")
+    assert check_if_same_observation(obs1, obs2) == True
+    assert check_if_same_observation(obs1, obs3) == False
+    assert check_if_same_observation(obs1, obs4) == False
+    print("Observation tests passed!")
+
+
+if __name__ == "__main__":
+    obs_test()
