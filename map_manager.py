@@ -2,6 +2,11 @@ import math
 import numpy as np
 
 
+def clamp(value, min_value, max_value):
+    """Clamp a value between min_value and max_value."""
+    return max(min(value, max_value), min_value)
+
+
 class MapManager:
     def __init__(self, name: str, corner_coords: list, file_path: str):
         """Holds the current map used in the frontend to convert to relative xy coordinates

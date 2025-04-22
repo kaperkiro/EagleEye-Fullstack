@@ -44,6 +44,20 @@ class ObjectManager:
         prev_seen = [obj for obj in self.objects if camera_id in obj.cameras]
         matched_ids = set()
         for obs in obs_list:
+            # resurrect archived object if same observation appears
+            resurrected = False
+            for hist_obj in list(self.history):
+                last_hist = hist_obj.observations[-1]
+                if check_if_same_observation(last_hist, obs):
+                    # restore object from history
+                    hist_obj.add_observation(obs, camera_id)
+                    matched_ids.add(hist_obj.id)
+                    self.history.remove(hist_obj)
+                    self.objects.append(hist_obj)
+                    resurrected = True
+                    break
+            if resurrected:
+                continue
             matched = False
             for obj in self.objects:
                 last_obs = obj.observations[-1]
@@ -72,7 +86,7 @@ class ObjectManager:
 
         Returns:
             List[Dict]: List of objects observed by the camera, each represented as a dictionary
-            eg [{"id": "1", "class": {...}, "geoposition": {...}]
+            eg [{"id": "1", "class": {...}, "geoposition": {...}, "bounding_box": {...}]
         """
         result = []
         for obj in self.objects:
@@ -83,6 +97,7 @@ class ObjectManager:
                         "id": obj.id,
                         "class": last_obs.get("class", {}),
                         "geoposition": last_obs.get("geoposition", {}),
+                        "bounding_box": last_obs.get("bounding_box", {}),
                     }
                 )
         return result

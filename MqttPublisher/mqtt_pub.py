@@ -97,7 +97,6 @@ class MqttPublisher:
         }
         payload_str = json.dumps(dummy_payload)
         self.client.publish(self.topic, payload_str, qos=0)
-        print(f"Published: {payload_str}")
 
     def run(self):
         self.connect()
@@ -128,7 +127,6 @@ class MqttPublisher:
             (59.3250, 18.0710),
             (59.3240, 18.0710),
         ]
-        print("count", count)
         # Take incremental steps towards the next coordinate
 
         if count < len(coords):
