@@ -7,8 +7,6 @@ class MapManager:
         """Holds the current map used in the frontend to convert to relative xy coordinates
         instead of absolute geocoordinates.
 
-        TODO: Make the backend hold the map...
-
         Args:
             name (str): name of the map
             corner_coords (list): list of corner coordinates of the map in the format [tl, bl, tr, br]

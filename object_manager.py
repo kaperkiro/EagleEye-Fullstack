@@ -29,6 +29,8 @@ class ObjectManager:
 
     def __init__(self):
         self.objects: List[GlobalObject] = []
+        # archive of objects no longer in any camera view
+        self.history: List[GlobalObject] = []
 
     def add_observations(self, camera_id: int, obs_list: List[Dict]) -> None:
         """Add observations from a camera to the global object list.
@@ -38,16 +40,29 @@ class ObjectManager:
             camera_id (int): ID of the camera
             obs_list (List[Dict]): List of observations from the camera, each represented as a dictionary
         """
+        # track objects previously seen by this camera
+        prev_seen = [obj for obj in self.objects if camera_id in obj.cameras]
+        matched_ids = set()
         for obs in obs_list:
             matched = False
             for obj in self.objects:
                 last_obs = obj.observations[-1]
                 if check_if_same_observation(last_obs, obs):
                     obj.add_observation(obs, camera_id)
+                    matched_ids.add(obj.id)
                     matched = True
                     break
             if not matched:
                 self.objects.append(GlobalObject(obs, camera_id))
+                matched_ids.add(self.objects[-1].id)
+        # remove camera from objects no longer observed
+        for obj in prev_seen:
+            if obj.id not in matched_ids:
+                obj.cameras.discard(camera_id)
+                # if no cameras left, archive object
+                if not obj.cameras:
+                    self.objects.remove(obj)
+                    self.history.append(obj)
 
     def get_objects_by_camera(self, camera_id: int) -> List[Dict]:
         """Get all objects observed by a specific camera.
@@ -93,6 +108,17 @@ class ObjectManager:
                     }
                 )
         return result
+
+    def get_history(self) -> List[Dict]:
+        """Return archived objects no longer in view."""
+        return [
+            {
+                "id": obj.id,
+                "observations": obj.observations,
+                "cameras": list(obj.cameras),
+            }
+            for obj in self.history
+        ]
 
 
 def test_global_object():
@@ -160,6 +186,7 @@ def test_object_manager():
     print("Global Objects:", om.objects)
     print("Objects by Camera ID 1:", om.get_objects_by_camera(1))
     print("Objects by Camera ID 2:", om.get_objects_by_camera(2))
+    print("Archived Objects:", om.get_history())
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 import unittest
 from object_manager import ObjectManager
 from helper import check_if_same_observation
+import sys
 
 
 class TestObjectManager(unittest.TestCase):

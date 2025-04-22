@@ -119,38 +119,6 @@ def get_alarms():
     return jsonify({"alarms": alarms})
 
 
-# TODO Define what camera_id is. Implement using new dictionary in mqtt_client.py
-@app.route("/api/detections/<int:camera_id>", methods=["GET"])
-def get_camera_detections(camera_id: int) -> jsonify:
-    """Gets all detections from the camera with the given ID.
-
-    Args:
-        camera_id (int): gets detections and positions of the camera with the given ID.
-
-    Returns:
-        jsonify: _jsonify with the detections from the camera. TODO add example...
-    """
-    print(f"API request for detections from camera {camera_id}")
-    if mqtt_client:
-        if mqtt_client.position:
-            detections = mqtt_client.get_detections(camera_id)
-            x, y = map_manager.convert_to_relative(mqtt_client.position)
-            position = [camera_id, x, y]
-            return jsonify(
-                {"camera_id": camera_id, "detections": detections, "position": position}
-            )
-        else:
-            logging.warning(
-                f"API request for detections from camera {camera_id}, but no position data available."
-            )
-            return jsonify({"message": "No position data available"}), 503
-    else:
-        logging.warning(
-            f"API request for detections from camera {camera_id}, but MQTT client is not initialized."
-        )
-        return jsonify({"message": "MQTT client not available"}), 503
-
-
 @app.route("/api/detections/<int:camera_id>/all", methods=["GET"])
 def get_camera_detections_by_id(camera_id: int) -> jsonify:
     """Gets all detections from the camera with the given ID.
@@ -181,8 +149,6 @@ def get_camera_detections_by_id(camera_id: int) -> jsonify:
                     position.append({"camera_id": camera_id, "x": x, "y": y})
                 return jsonify(
                     {
-                        "camera_id": camera_id,
-                        "detections": detections,
                         "position": position,
                     }
                 )
@@ -217,9 +183,7 @@ def test() -> jsonify:
             x, y = map_manager.convert_to_relative(mqtt_client.position[0])
             position = [1, x, y]
             detections = mqtt_client.get_detections(num)
-            return jsonify(
-                {"camera_id": num, "detections": detections, "position": position}
-            )
+            return jsonify({"position": position})
         else:
             return jsonify({"message": "No position data available"}), 503
 

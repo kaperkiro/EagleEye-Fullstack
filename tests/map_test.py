@@ -1,16 +1,22 @@
-    """
-    Unit tests for the Map class in the map module. Doesnt work in current folder... 
-    
-    Status: Currently passing all tests.
-    """
+"""
+Unit tests for the Map class in the map module. Doesnt work in current folder...
+
+Status: Currently passing all tests.
+"""
+
+import os, sys
+
+# add parent folder (Backend-Code) onto path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import unittest
-from map_holder import MapManager
+from map_manager import MapManager  # now this will resolve
 
 
 class TestMapConverter(unittest.TestCase):
     def setUp(self):
         # Define a map with known corners (TL, BL, TR, BR)
-        self.test_map = Map(
+        self.test_map = MapManager(
             name="Test Room",
             corner_coords=[
                 (59.3250, 18.0700),  # top-left
