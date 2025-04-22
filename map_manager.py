@@ -68,6 +68,30 @@ class MapManager:
 
         return (u, v)
 
+    def create_corners(self, camera_geocoords: tuple):
+        """Creates corners from camera position.
+        for now creates a square infront of the camera of 5 x 5 m eg
+        |-----|
+        |     |
+        |--*--| where * is the camera position
+        and the corners are the four corners of the square.
+        """
+        M_PER_DEG_LAT = 110_574  # approx meters per degree latitude
+        M_PER_DEG_LON = 111_320 * math.cos(
+            math.radians(camera_geocoords[0])
+        )  # adjust by cos(lat)
+        lat0, lon0 = camera_geocoords
+        # 5 m in lat/lon degrees
+        lat_offset = 2.5 / M_PER_DEG_LAT
+        lon_offset = 2.5 / M_PER_DEG_LON
+        # Create corners
+        tl = (lat0 + lat_offset, lon0 - lon_offset)
+        bl = (lat0 - lat_offset, lon0 - lon_offset)
+        tr = (lat0 + lat_offset, lon0 + lon_offset)
+        br = (lat0 - lat_offset, lon0 + lon_offset)
+
+        self.corner_coords = [tl, bl, tr, br]
+
     def return_map(self):
         """Return the map object."""
         return self
