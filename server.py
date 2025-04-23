@@ -205,6 +205,7 @@ def get_camera_positions():
     """Returns the camera positions in relative coordinates."""
     if mqtt_client:
         camera_positions = map_manager.camera_relative_coords
+        print(camera_positions)
         if not camera_positions:
             return jsonify({"message": "No camera positions available"}), 503
         return jsonify({"cam_pos": camera_positions}), 200
@@ -219,7 +220,6 @@ def run_flask_server(
     mqtt_client = mqtt_client_instance
     global map_manager
     map_manager = map_manager_instance
-
     logging.info("Starting Flask server...")
     app.run(debug=True, port=5001, use_reloader=False, host="0.0.0.0")
 
@@ -235,10 +235,10 @@ if __name__ == "__main__":
             (59.3240, 18.0710),
         ],
         "floor_plan.jpg",
-        camera_geocoords={
-            "cam_tl": (59.3250, 18.0701),  # top-left
-            "cam_br": (59.3241, 18.0710),  # bottom-right
-            "cam_center": (59.3245, 18.0705),  # center
+        {
+            1: (59.3250, 18.0701),  # top-left
+            2: (59.3241, 18.0710),  # bottom-right
+            3: (59.3245, 18.0705),  # center
         },
     )
 

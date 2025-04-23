@@ -117,16 +117,17 @@ if __name__ == "__main__":
     # Test conversion for three cameras on a unit square map
     corners = [(0, 0), (1, 0), (0, 1), (1, 1)]
     camera_geocoords = {
-        "cam_tl": (0, 0),  # top-left
-        "cam_br": (1, 1),  # bottom-right
-        "cam_center": (0.5, 0.5),  # center
+        1: (0, 0),  # top-left
+        2: (1, 1),  # bottom-right
+        3: (0.5, 0.5),  # center
     }
     mm = MapManager("test_map", corners, "dummy_path", camera_geocoords)
     expected = {
-        "cam_tl": (0.0, 0.0),
-        "cam_br": (100.0, 100.0),
-        "cam_center": (50.0, 50.0),
+        1: (0.0, 0.0),
+        2: (100.0, 100.0),
+        3: (50.0, 50.0),
     }
+    print(mm.camera_relative_coords)
     for cam_id, exp in expected.items():
         rel = mm.camera_relative_coords.get(cam_id)
         print(f"{cam_id}: computed {rel}, expected {exp}")
