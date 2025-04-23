@@ -8,7 +8,13 @@ def clamp(value, min_value, max_value):
 
 
 class MapManager:
-    def __init__(self, name: str, corner_coords: list, file_path: str):
+    def __init__(
+        self,
+        name: str,
+        corner_coords: list,
+        file_path: str,
+        camera_geocoords: dict[tuple] = None,
+    ):
         """Holds the current map used in the frontend to convert to relative xy coordinates
         instead of absolute geocoordinates.
 
@@ -19,10 +25,20 @@ class MapManager:
                 corner_coords = [(lat1, lon1), (lat2, lon2), (lat3, lon3), (lat4, lon4)]
                 Technically br is not needed
             file_path (str): filepath of the image file of the map
+            camera_geocoords (dict): dictionary of camera geocoordinates in the format {camera_id: (lat, lon)}
         """
         self.name = name
         self.corner_coords = corner_coords  # [(lat, lon), ...] in order TL, BL, TR, BR
         self.file_path = file_path
+        self.camera_geocoords = camera_geocoords  # {camera_id: (x, y)}
+        # Compute relative coordinates for each camera using convert_to_relative
+        if self.camera_geocoords:
+            self.camera_relative_coords = {
+                cam_id: self.convert_to_relative(coords)
+                for cam_id, coords in self.camera_geocoords.items()
+            }
+        else:
+            self.camera_relative_coords = {}
 
     def __str__(self):
         return f"Map(name={self.name}, corner_coords={self.corner_coords}, file_path={self.file_path})"
@@ -95,3 +111,27 @@ class MapManager:
     def return_map(self):
         """Return the map object."""
         return self
+
+
+if __name__ == "__main__":
+    # Test conversion for three cameras on a unit square map
+    corners = [(0, 0), (1, 0), (0, 1), (1, 1)]
+    camera_geocoords = {
+        "cam_tl": (0, 0),  # top-left
+        "cam_br": (1, 1),  # bottom-right
+        "cam_center": (0.5, 0.5),  # center
+    }
+    mm = MapManager("test_map", corners, "dummy_path", camera_geocoords)
+    expected = {
+        "cam_tl": (0.0, 0.0),
+        "cam_br": (100.0, 100.0),
+        "cam_center": (50.0, 50.0),
+    }
+    for cam_id, exp in expected.items():
+        rel = mm.camera_relative_coords.get(cam_id)
+        print(f"{cam_id}: computed {rel}, expected {exp}")
+        assert rel is not None, f"No relative coords for {cam_id}"
+        assert (
+            abs(rel[0] - exp[0]) < 1e-2 and abs(rel[1] - exp[1]) < 1e-2
+        ), f"For {cam_id}, expected {exp}, got {rel}"
+    print("MapManager conversion tests passed.")

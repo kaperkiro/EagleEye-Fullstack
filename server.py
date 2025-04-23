@@ -200,6 +200,18 @@ def get_map():
         return jsonify({"message": "Map file not found"}), 404
 
 
+@app.route("/api/camera_positions", methods=["GET"])
+def get_camera_positions():
+    """Returns the camera positions in relative coordinates."""
+    if mqtt_client:
+        camera_positions = map_manager.camera_relative_coords
+        if not camera_positions:
+            return jsonify({"message": "No camera positions available"}), 503
+        return jsonify({"cam_pos": camera_positions}), 200
+    else:
+        return jsonify({"message": "MQTT client not available"}), 503
+
+
 def run_flask_server(
     mqtt_client_instance: MqttClient, map_manager_instance: MapManager
 ):
@@ -223,6 +235,11 @@ if __name__ == "__main__":
             (59.3240, 18.0710),
         ],
         "floor_plan.jpg",
+        camera_geocoords={
+            "cam_tl": (59.3250, 18.0701),  # top-left
+            "cam_br": (59.3241, 18.0710),  # bottom-right
+            "cam_center": (59.3245, 18.0705),  # center
+        },
     )
 
     mqtt_instance = MqttClient()
