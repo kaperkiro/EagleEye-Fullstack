@@ -1,6 +1,7 @@
 import paho.mqtt.client as mqtt
 import json
 import time
+import random
 
 
 class MqttPublisher:
@@ -10,13 +11,20 @@ class MqttPublisher:
         broker_port=1883,
         topic="axis/frame_metadata",
         publish_interval=0.5,
+        camera_id=1,
     ):
+        self.camera_id = camera_id
         self.broker_host = broker_host
         self.broker_port = broker_port
-        self.topic = topic
+        self.topic = f"axis/{camera_id}/frame_metadata"
         self.publish_interval = publish_interval
         self.client = mqtt.Client()
-        self.current_coords = [59.3245, 18.0705]
+        # maintain independent geopositions per track
+        self.coords = {
+            "29": [59.3245, 18.0705],
+            "30": [59.3245 - 0.00001, 18.0705 + 0.00001],
+            "31": [59.3245 + 0.00001, 18.0705 - 0.00001],
+        }
 
     def connect(self):
         self.client.connect(self.broker_host, self.broker_port, 60)
@@ -27,6 +35,11 @@ class MqttPublisher:
         self.client.disconnect()
 
     def publish_dummy_data(self):
+        # update each track's position independently
+        for tid, pos in self.coords.items():
+            pos[0] += random.uniform(-0.0001, 0.0001)
+            pos[1] += random.uniform(-0.0001, 0.0001)
+
         dummy_payload = {
             "frame": {
                 "observations": [
@@ -44,10 +57,10 @@ class MqttPublisher:
                             "upper_clothing_colors": [{"name": "Gray", "score": 0.71}],
                         },
                         "geoposition": {
-                            "latitude": self.current_coords[0],
-                            "longitude": self.current_coords[1],
+                            "latitude": self.coords["29"][0],
+                            "longitude": self.coords["29"][1],
                         },
-                        "timestamp": "2025-04-02T08:18:12.678869Z",
+                        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                         "track_id": "29",
                     },
                     {
@@ -64,10 +77,10 @@ class MqttPublisher:
                             "upper_clothing_colors": [{"name": "White", "score": 0.75}],
                         },
                         "geoposition": {
-                            "latitude": self.current_coords[0] - 0.00001,
-                            "longitude": self.current_coords[1] + 0.00001,
+                            "latitude": self.coords["30"][0],
+                            "longitude": self.coords["30"][1],
                         },
-                        "timestamp": "2025-04-02T08:18:12.678869Z",
+                        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                         "track_id": "30",
                     },
                     {
@@ -84,15 +97,15 @@ class MqttPublisher:
                             "upper_clothing_colors": [{"name": "Brown", "score": 0.65}],
                         },
                         "geoposition": {
-                            "latitude": self.current_coords[0] + 0.00001,
-                            "longitude": self.current_coords[1] - 0.00001,
+                            "latitude": self.coords["31"][0],
+                            "longitude": self.coords["31"][1],
                         },
-                        "timestamp": "2025-04-02T08:18:12.678869Z",
+                        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                         "track_id": "31",
                     },
                 ],
                 "operations": [],
-                "timestamp": "2025-04-02T08:18:12.678869Z",
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             }
         }
         payload_str = json.dumps(dummy_payload)
@@ -100,38 +113,14 @@ class MqttPublisher:
 
     def run(self):
         self.connect()
-        dividor = 0
-        count = 0
         try:
             while True:
                 self.publish_dummy_data()
-                dividor += 1
-                if dividor % 10 == 0:
-                    count += 1
-                    dividor = 0
-                    if count == 4:
-                        count = 0
-
-                self.cycle_coords(count)
-
                 time.sleep(self.publish_interval)
         except KeyboardInterrupt:
             print("Stopping dummy publisher.")
         finally:
             self.disconnect()
-
-    def cycle_coords(self, count):
-        coords = [
-            (59.3250, 18.0700),
-            (59.3240, 18.0700),
-            (59.3250, 18.0710),
-            (59.3240, 18.0710),
-        ]
-        # Take incremental steps towards the next coordinate
-
-        if count < len(coords):
-            self.current_coords[0] += (coords[count][0] - self.current_coords[0]) / 10
-            self.current_coords[1] += (coords[count][1] - self.current_coords[1]) / 10
 
 
 if __name__ == "__main__":

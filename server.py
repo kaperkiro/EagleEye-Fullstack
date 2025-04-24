@@ -244,4 +244,8 @@ if __name__ == "__main__":
     publisher.connect()
     threading.Thread(target=publisher.run, daemon=True).start()
 
+    publisher = MqttPublisher(camera_id=100)
+    publisher.connect()
+    threading.Thread(target=publisher.run, daemon=True).start()
+
     run_flask_server(mqtt_instance, map_instance)

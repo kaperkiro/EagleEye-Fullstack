@@ -39,7 +39,7 @@ class MqttClient:
         properties: Any,
     ) -> None:
         print(f"Connected with result code {reason_code}")
-        self.subscribe("axis/frame_metadata", qos=0)  # TODO: HARDCODED TOPIC
+        self.subscribe("axis/+/frame_metadata", qos=0)  # TODO: HARDCODED TOPIC
 
     def _on_message(
         self, client: mqtt.Client, userdata: Any, msg: mqtt.MQTTMessage
@@ -48,7 +48,8 @@ class MqttClient:
         Stores all detections in a dictionary and only updates its own view of the data
         """
         try:
-            camera_id = 1  # TODO: FIX HARD CODED CAMERA ID
+            parts = msg.topic.split("/")
+            camera_id = int(parts[1])  # TODO: FIX HARD CODED CAMERA ID
             payload = json.loads(msg.payload.decode())
             # Set each uniques cameras observation
             frame_data = payload.get("frame", {})
@@ -56,7 +57,7 @@ class MqttClient:
             self.detections[camera_id] = observations
             # Update global object tracking
             self.object_manager.add_observations(camera_id, observations)
-            self.set_positions_from_observations(camera_id, frame_data)
+            # self.set_positions_from_observations(camera_id, frame_data)
 
         except (json.JSONDecodeError, ValueError) as e:
             print(f"Failed to parse MQTT message: {e}")
