@@ -2,6 +2,7 @@
 import uuid
 from typing import List, Dict
 from helper import check_if_same_observation
+import time
 
 
 class GlobalObject:
@@ -32,6 +33,15 @@ class ObjectManager:
         # archive of objects no longer in any camera view
         self.history: List[GlobalObject] = []
 
+    def _prune_history(self):
+        """Remove archived objects older than 15 seconds"""
+        now = time.time()
+        self.history = [
+            obj
+            for obj in self.history
+            if hasattr(obj, "archived_at") and (now - obj.archived_at) <= 15
+        ]
+
     def add_observations(self, camera_id: int, obs_list: List[Dict]) -> None:
         """Add observations from a camera to the global object list.
         If the observation is similar to an existing one, it will be added to that object.
@@ -40,6 +50,8 @@ class ObjectManager:
             camera_id (int): ID of the camera
             obs_list (List[Dict]): List of observations from the camera, each represented as a dictionary
         """
+        # prune old history entries
+        self._prune_history()
         # track objects previously seen by this camera
         prev_seen = [obj for obj in self.objects if camera_id in obj.cameras]
         matched_ids = set()
@@ -49,7 +61,6 @@ class ObjectManager:
             for hist_obj in list(self.history):
                 last_hist = hist_obj.observations[-1]
                 if check_if_same_observation(last_hist, obs):
-                    # restore object from history
                     hist_obj.add_observation(obs, camera_id)
                     matched_ids.add(hist_obj.id)
                     self.history.remove(hist_obj)
@@ -76,6 +87,7 @@ class ObjectManager:
                 # if no cameras left, archive object
                 if not obj.cameras:
                     self.objects.remove(obj)
+                    obj.archived_at = time.time()
                     self.history.append(obj)
 
     def get_objects_by_camera(self, camera_id: int) -> List[Dict]:
@@ -146,6 +158,8 @@ class ObjectManager:
 
     def get_history(self) -> List[Dict]:
         """Return archived objects no longer in view."""
+        # prune old history entries before returning
+        self._prune_history()
         return [
             {
                 "id": obj.id,
