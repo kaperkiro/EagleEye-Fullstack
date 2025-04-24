@@ -102,6 +102,26 @@ class ObjectManager:
                 )
         return result
 
+    def get_all_objects(self) -> List[Dict]:
+        """Returns all cameras and their observations.
+        in the form of [{"camera_id": 1, "id", "geoposition": {...}}]
+
+        Returns:
+            List[Dict]: _description_
+        """
+        result = []
+        for obj in self.objects:
+            for camera_id in obj.cameras:
+                last_obs = obj.observations[-1]
+                result.append(
+                    {
+                        "camera_id": camera_id,
+                        "id": obj.id,
+                        "geoposition": last_obs.get("geoposition", {}),
+                    }
+                )
+        return result
+
     def get_objects_geoposition(self, camera_id: int) -> List[Dict]:
         """Get all objects observed by a specific camera with only their geocoordinates.
 
@@ -204,7 +224,45 @@ def test_object_manager():
     print("Archived Objects:", om.get_history())
 
 
+def test_getting_all():
+    om = ObjectManager()
+    obs1 = {
+        "geoposition": {"latitude": 59.3250, "longitude": 18.0700},
+        "class": {
+            "type": "Human",
+            "upper_clothing_colors": [{"name": "Red", "score": 0.8}],
+            "lower_clothing_colors": [{"name": "Blue", "score": 0.7}],
+        },
+    }
+
+    obs2 = {
+        "geoposition": {"latitude": 59.32501, "longitude": 18.07001},
+        "class": {
+            "type": "Human",
+            "upper_clothing_colors": [{"name": "Red", "score": 0.8}],
+            "lower_clothing_colors": [{"name": "Blue", "score": 0.7}],
+        },
+    }
+
+    # clearly different observation
+    obs3 = {
+        "geoposition": {"latitude": 30.0, "longitude": 40.0},
+        "class": {
+            "lower_clothing_colors": [{"name": "Red", "score": 0.7}],
+            "score": 0.95,
+            "type": "Animal",
+            "upper_clothing_colors": [{"name": "Brown", "score": 0.65}],
+        },
+        "bounding_box": {"x": 5, "y": 6, "w": 7, "h": 8},
+    }
+    om.add_observations(camera_id=1, obs_list=[obs1, obs3])
+    om.add_observations(camera_id=2, obs_list=[obs2])
+
+    print("All Objects:", om.get_all_objects())
+
+
 if __name__ == "__main__":
-    test_global_object()
-    print("<------Testing ObjectManager------>")
-    test_object_manager()
+    # test_global_object()
+    # print("<------Testing ObjectManager------>")
+    # test_object_manager()
+    test_getting_all()
