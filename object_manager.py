@@ -3,6 +3,7 @@ import uuid
 from typing import List, Dict
 from helper import check_if_same_observation
 import time
+import json
 
 
 class GlobalObject:
@@ -42,6 +43,18 @@ class ObjectManager:
             if hasattr(obj, "archived_at") and (now - obj.archived_at) <= 15
         ]
 
+    def save_obj(self, obj):
+        """
+        * saves object to a json file.
+        """
+
+        def append_json_line(entry: dict):
+            with open("heatmap_data.jl", "a") as f:
+                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+        if obj:
+            append_json_line(obj)
+
     def add_observations(self, camera_id: int, obs_list: List[Dict]) -> None:
         """Add observations from a camera to the global object list.
         If the observation is similar to an existing one, it will be added to that object.
@@ -50,6 +63,8 @@ class ObjectManager:
             camera_id (int): ID of the camera
             obs_list (List[Dict]): List of observations from the camera, each represented as a dictionary
         """
+        # list of object to save
+        save_obj_list = []
         # prune old history entries
         self._prune_history()
         # track objects previously seen by this camera
@@ -78,7 +93,9 @@ class ObjectManager:
                     matched = True
                     break
             if not matched:
-                self.objects.append(GlobalObject(obs, camera_id))
+                save_obj_list.append(obs)
+                globa_obj = GlobalObject(obs, camera_id)
+                self.objects.append(globa_obj)
                 matched_ids.add(self.objects[-1].id)
         # remove camera from objects no longer observed
         for obj in prev_seen:
@@ -89,6 +106,7 @@ class ObjectManager:
                     self.objects.remove(obj)
                     obj.archived_at = time.time()
                     self.history.append(obj)
+        self.save_obj(save_obj_list)
 
     def get_objects_by_camera(self, camera_id: int) -> List[Dict]:
         """Get all objects observed by a specific camera.

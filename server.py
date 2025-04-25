@@ -6,6 +6,7 @@ import json
 import logging
 import threading
 from MqttPublisher.mqtt_pub import MqttPublisher
+import heatmap
 
 # Removed invalid import statement. If 'map' is a custom module, use 'import map'.
 
@@ -77,6 +78,12 @@ def create_alarm_zone():
     )
 
 
+@app.route("/api/heatmap/<timeframe>", methods=["POST"])
+def get_heatmap(timeframe):
+    payload = heatmap.create_heatmap(timeframe, map_instance)
+    print(payload)
+
+
 @app.route("/api/alarms/<string:alarm_id>", methods=["DELETE"])
 def delete_alarm(alarm_id):
     """
@@ -92,12 +99,11 @@ def delete_alarm(alarm_id):
     return jsonify({"message": "Alarm zone removed successfully"}), 200
 
 
-@app.route("/api/alarms/status/<string:alarm_id>", methods=["POST"])
+@app.route("/api/alarms/status/<string:alarm_id>", methods=["POST", "PATCH"])
 def status_alarm(alarm_id):
     """
     POST endpoint for changing the status of an alarm zone by its ID.
     """
-
     if not alarm_id:
         return jsonify({"message": "No zone included "}), 404
     alarms = load_alarms()
@@ -227,7 +233,7 @@ if __name__ == "__main__":
             (59.3250, 18.0710),
             (59.3240, 18.0710),
         ],
-        "floor_plan.jpg",
+        "assets/floor_plan.jpg",
         {
             1: (59.3250, 18.0701),  # top-left
             2: (59.3241, 18.0710),  # bottom-right
