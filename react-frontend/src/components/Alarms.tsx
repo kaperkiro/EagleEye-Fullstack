@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FloorPlanStaticObjects } from "./AlarmObj.tsx";
+import alarmSound from "../assets/alarmSound.wav";
 import "../css/Alarms.css";
 
 // A simple point in percentage relative to the floor plan.
@@ -32,25 +33,52 @@ export const LarmData = () => {
   // List of finalized alarm zones that include their ID.
   const [alarms, setAlarms] = useState<AlarmZone[]>([]);
 
+  // Audio ref for alarm sound
+  const audioRef = useRef<HTMLAudioElement>(null);
+
   // Fetch existing alarm zones from the backend when the component mounts.
   useEffect(() => {
-    fetch(`${BACKEND_URL}/api/alarms`)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch alarms from backend");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        if (data.alarms) {
-          setAlarms(data.alarms);
-          console.log("Loaded alarms from backend:", data.alarms);
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching alarms:", error);
-      });
+    // Fetch immediately, then every 100ms
+    fetchAlarms();
+    const intervalId = setInterval(fetchAlarms, 100);
+
+    // Cleanup on unmount
+    return () => clearInterval(intervalId);
   }, []);
+
+  // Play/pause alarm sound when any zone is triggered
+  useEffect(() => {
+    const anyTriggered = alarms.some((zone) => zone.triggered);
+    const audio = audioRef.current;
+    if (audio) {
+      if (anyTriggered) {
+        audio.play().catch((e) => console.warn("Audio play failed:", e));
+      } else {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    }
+  }, [alarms]);
+
+  /**
+   * API call for all Alarms.
+   * gets the list of alarms
+   */
+  const fetchAlarms = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/alarms`);
+      if (!res.ok) {
+        throw new Error("Failed to fetch alarms from backend");
+      }
+      const data = await res.json();
+      if (data.alarms) {
+        setAlarms(data.alarms);
+        console.log("Loaded alarms from backend:", data.alarms);
+      }
+    } catch (err) {
+      console.error("Error fetching alarms:", err);
+    }
+  };
 
   // Handle switching modes. If leaving Add Zone mode, clear drawing state.
   const handleButtonClick = (index: number) => {
@@ -71,128 +99,92 @@ export const LarmData = () => {
   const changeAlarmStatus = (id: string) => {
     fetch(`${BACKEND_URL}/api/alarms/status/${id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
     })
       .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to update alarm");
-        }
+        if (!response.ok) throw new Error("Failed to update alarm");
         return response.json();
       })
       .then((result) => {
-        console.log("Backend response:", result); // Likely just a message
-        // Toggle the 'active' property locally
-        setAlarms((prevAlarms) =>
-          prevAlarms.map((alarm) =>
+        console.log("Backend response:", result);
+        setAlarms((prev) =>
+          prev.map((alarm) =>
             alarm.id === id ? { ...alarm, active: !alarm.active } : alarm
           )
         );
       })
-      .catch((error) => {
-        console.error("Error updating alarm:", error);
-      });
+      .catch((err) => console.error("Error updating alarm:", err));
   };
 
   // Save a new alarm zone via a POST call to the backend.
-  // Notice that we send an object without an id.
   const saveAlarmZone = (newAlarm: Omit<AlarmZone, "id">) => {
     fetch(`${BACKEND_URL}/api/alarms`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newAlarm),
     })
       .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to save alarm zone");
-        }
+        if (!response.ok) throw new Error("Failed to save alarm zone");
         return response.json();
       })
       .then((data) => {
         if (data.alarm) {
-          // The returned alarm now includes a generated id.
           setAlarms((prev) => [...prev, data.alarm]);
           console.log("Saved new alarm zone:", data.alarm);
         }
       })
-      .catch((error) => {
-        console.error("Error saving alarm zone:", error);
-      });
+      .catch((err) => console.error("Error saving alarm zone:", err));
   };
 
   // Remove an alarm zone via a DELETE call to the backend.
-  // The endpoint uses the unique id in the URL.
   const handleRemoveZone = (id: string) => {
-    fetch(`${BACKEND_URL}/api/alarms/${id}`, {
-      method: "DELETE",
-    })
+    fetch(`${BACKEND_URL}/api/alarms/${id}`, { method: "DELETE" })
       .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to remove alarm zone");
-        }
+        if (!response.ok) throw new Error("Failed to remove alarm zone");
         return response.json();
       })
       .then(() => {
-        console.log("Removed alarm zone with id:", id);
-        // Remove the alarm from the state based on its id.
         setAlarms((prev) => prev.filter((alarm) => alarm.id !== id));
+        console.log("Removed alarm zone with id:", id);
       })
-      .catch((error) => {
-        console.error("Error removing alarm zone:", error);
-      });
+      .catch((err) => console.error("Error removing alarm zone:", err));
   };
 
-  // Handle left-click events. In Add Zone mode, use the first click as the start and
-  // the second as the end point to finalize an alarm zone.
+  // Handle left-click events for Add Zone mode.
   const handleMouseClick = (
-    event: React.MouseEvent<HTMLDivElement, MouseEvent>
+    e: React.MouseEvent<HTMLDivElement, MouseEvent>
   ) => {
-    if (activeIndexLB !== 0) return; // Only in Add Zone mode
-
-    const containerRect = event.currentTarget.getBoundingClientRect();
-    const clickX = event.clientX - containerRect.left;
-    const clickY = event.clientY - containerRect.top;
-    const percentX = (clickX / containerRect.width) * 100;
-    const percentY = (clickY / containerRect.height) * 100;
-    const clickPoint: Point = { x: percentX, y: percentY };
+    if (activeIndexLB !== 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const point = { x, y };
 
     if (!zoneStart) {
-      // First click: store the starting point.
-      setZoneStart(clickPoint);
+      setZoneStart(point);
     } else {
-      // Second click: finalize the alarm zone.
-      const finalizedZone = calculateAlarmZone(zoneStart, clickPoint);
-      // Save the zone to the backend. The backend generates the id.
-      saveAlarmZone(finalizedZone);
-      // Reset drawing state.
+      const zone = calculateAlarmZone(zoneStart, point);
+      saveAlarmZone(zone);
       setZoneStart(null);
       setDraftZone(null);
     }
   };
 
   // Update the draft zone dynamically as the mouse moves.
-  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (activeIndexLB !== 0 || !zoneStart) return;
-
-    const containerRect = event.currentTarget.getBoundingClientRect();
-    const mouseX = event.clientX - containerRect.left;
-    const mouseY = event.clientY - containerRect.top;
-    const percentX = (mouseX / containerRect.width) * 100;
-    const percentY = (mouseY / containerRect.height) * 100;
-    const currentPoint: Point = { x: percentX, y: percentY };
-
-    // Update draft zone without the id.
-    const currentZone = calculateAlarmZone(zoneStart, currentPoint);
-    setDraftZone(currentZone);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const point = {
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100,
+    };
+    setDraftZone(calculateAlarmZone(zoneStart, point));
   };
 
   // Right-click cancels the current draft.
-  const handleContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
+  const handleContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
     if (activeIndexLB === 0 && zoneStart) {
-      event.preventDefault();
+      e.preventDefault();
       setZoneStart(null);
       setDraftZone(null);
     }
@@ -200,7 +192,11 @@ export const LarmData = () => {
 
   return (
     <div className="alarmsDiv">
+      {/* Alarm sound element */}
+      <audio ref={audioRef} src={alarmSound} loop preload="auto" />
+
       <div className="alarmLeftSidebar">
+        {/* Sidebar buttons */}
         <button
           className={`alarmButton ${activeIndexLB === 0 ? "active" : ""}`}
           onClick={() => handleButtonClick(0)}
@@ -230,7 +226,7 @@ export const LarmData = () => {
         >
           <FloorPlanStaticObjects />
 
-          {/* Render a draft zone while drawing */}
+          {/* Draft zone while drawing */}
           {draftZone && (
             <div
               style={{
@@ -245,37 +241,33 @@ export const LarmData = () => {
               }}
             />
           )}
-          {/* Render all saved alarm zones */}
+
+          {/* Render alarm zones */}
           {alarms.map((zone) => (
             <div
               key={zone.id}
-              // In Remove Zone mode, clicking a zone triggers deletion.
               onClick={
                 activeIndexLB === 1 || activeIndexLB === 2
                   ? (e) => {
                       e.stopPropagation();
-                      if (activeIndexLB === 1) {
-                        handleRemoveZone(zone.id);
-                      } else if (activeIndexLB === 2) {
-                        changeAlarmStatus(zone.id);
-                      }
+                      activeIndexLB === 1
+                        ? handleRemoveZone(zone.id)
+                        : changeAlarmStatus(zone.id);
                     }
                   : undefined
               }
+              className={`alarmZone ${
+                zone.triggered
+                  ? "blinking"
+                  : zone.active
+                  ? "active"
+                  : "inactive"
+              }`}
               style={{
-                position: "absolute",
                 left: `${zone.topLeft.x}%`,
                 top: `${zone.topLeft.y}%`,
                 width: `${zone.bottomRight.x - zone.topLeft.x}%`,
                 height: `${zone.bottomRight.y - zone.topLeft.y}%`,
-                backgroundColor:
-                  zone.active === true
-                    ? "rgba(144,238,144,0.5)"
-                    : "rgb(105,105,105, 0.5)",
-                pointerEvents:
-                  activeIndexLB === 1 || activeIndexLB === 2 ? "auto" : "none",
-                border:
-                  zone.active === true ? "2px dashed green" : "2px dashed gray",
               }}
             />
           ))}

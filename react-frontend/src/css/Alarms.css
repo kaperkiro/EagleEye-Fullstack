@@ -52,3 +52,28 @@
   font-size: 24px;
   border-radius: 2.5vh;
 }
+
+/*defines what happens during blinking*/
+@keyframes blink {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.alarmZone {
+  position: absolute;
+  /* width/height/position still inline or via CSS variables */
+}
+.alarmZone.active {
+  background-color: rgba(144, 238, 144, 0.5);
+  border: 2px dashed green;
+}
+.alarmZone.inactive {
+  background-color: rgba(105, 105, 105, 0.5);
+  border: 2px dashed gray;
+}
+.alarmZone.blinking {
+  animation: blink 1s step-start infinite;
+  background-color: rgba(255, 0, 0, 0.5);
+  border: 2px dashed red;
+}

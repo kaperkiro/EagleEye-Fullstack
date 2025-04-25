@@ -7,7 +7,6 @@ import "../css/AlarmObj.css";
  * Displays the static floorplan image with buttons representing objects seen by cameras.
  *Position of objects are depending on the geological positions of the map and objects.
  *
- * @returns
  */
 
 export const FloorPlanStaticObjects: React.FC = () => {
@@ -24,7 +23,7 @@ export const FloorPlanStaticObjects: React.FC = () => {
     const interval = setInterval(() => {
       setObjects(mock_obj_data.objects);
     }, 500);
-    // Cleanup interval on component unmount
+    // Cleanup interval on component unmount to stop it from iterating.
     return () => clearInterval(interval);
   }, []);
 

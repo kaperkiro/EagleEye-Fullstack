@@ -55,13 +55,28 @@ export async function getStreamUrls(id: number): Promise<string[]> {
   return urls;
 }
 
+async function getCameras() {
+  const response = await fetch(`http://localhost:5001/api/camera_positions`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch camera positions: ${response.status}`);
+  }
+  const data = await response.json();
+  return data;
+}
+
 export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
   selectedId,
   onDotClick,
 }) => {
   // Use state to store the object data
+  const [cameras, setCameras] = useState<
+    Record<string, { x: number; y: number }>
+  >({});
   const [objects, setObjects] = useState(mock_obj_data.objects);
   const imageUrl = useFloorPlan(); // Get the pre-fetched image URL
+
+  //camera image jpg:
+  const camerIcon = "src/assets/camera.png";
 
   //Real object
   //const [objects, setObjects] = useState<MapObject[]>([]);
@@ -102,13 +117,33 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
     }
   };
 
+  const pollCameras = async () => {
+    try {
+      const data = await getCameras();
+      setCameras(data);
+    } catch (err) {
+      console.error("Failed to poll cameras:", err);
+    }
+  };
+
+  //fetch camera pos once before interval
   useEffect(() => {
-    // Poll for new object data every 500ms.
+    // on mount, fetch camera positions a single time
+    pollCameras();
+  }, []);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       // Replace this line with your API call when ready.
       //API call:
+<<<<<<< HEAD
       fetchPositionData(1);
       //setObjects(mock_obj_data.objects);
+=======
+      //fetchPositionData(1);
+      // remove this and uncomment fetchPositionData(1) for API call
+      setObjects(mock_obj_data.objects);
+>>>>>>> a1f6d9b (added camera icon)
     }, 500);
 
     return () => clearInterval(interval);
@@ -119,8 +154,26 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
       <img
         src={imageUrl}
         alt="Floor Plan"
-        style={{ width: "100%", height: "100%" }}
+        style={{ width: "100%", height: "100%", zIndex: 0 }}
       />
+      {Object.entries(cameras).map(([id, coords]) => (
+        <img
+          key={id}
+          src={camerIcon}
+          alt={`camera ${id}`}
+          style={{
+            position: "absolute",
+            top: `${coords.y}%`,
+            left: `${coords.x}%`,
+            width: "4%",
+            height: "6%",
+            zIndex: 1,
+            borderRadius: "35px",
+            border: "solid 2px black",
+          }}
+        />
+      ))}
+
       {objects.map((obj) => {
         const isSelected = obj.id === selectedId;
         return (
@@ -135,6 +188,7 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
               left: `${obj.x}%`,
               top: `${obj.y}%`,
               backgroundColor: isSelected ? "yellow" : "#3B82F6",
+              zIndex: 2,
             }}
           />
         );
