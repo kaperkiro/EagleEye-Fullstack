@@ -22,7 +22,7 @@ export const FloorPlanStaticObjects: React.FC = () => {
      */
     const interval = setInterval(() => {
       setObjects(mock_obj_data.objects);
-    }, 500);
+    }, 100);
     // Cleanup interval on component unmount to stop it from iterating.
     return () => clearInterval(interval);
   }, []);

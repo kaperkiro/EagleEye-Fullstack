@@ -3,74 +3,77 @@ import { heatmapData } from "./MockData";
 import { useFloorPlan } from "./floorPlanProvider";
 import "../css/HeatMap.css";
 
-const FloorPlanWithHeatmap = () => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+// Define the shape of a single heatmap point
+interface HeatmapPoint {
+  x: number; // percent X (0-100)
+  y: number; // percent Y (0-100)
+  intensity: number; // value between 0 and 1
+}
+
+// Props for the canvas component
+interface FloorPlanWithHeatmapProps {
+  points: HeatmapPoint[];
+}
+
+// Canvas component that draws an overlay heatmap
+const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
+  points,
+}) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageUrl = useFloorPlan();
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    // Set canvas drawing context
-    const ctx = canvas.getContext("2d")!;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    // Ensure canvas is cleared
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Use RAF for smoother redraw if needed
+    const draw = () => {
+      const { width, height } = canvas;
+      ctx.clearRect(0, 0, width, height);
 
-    // Use the "last_hour" data for this example.
-    const points = heatmapData.heatmap.last_hour;
+      points.forEach((pt) => {
+        const x = (pt.x / 100) * width;
+        const y = (pt.y / 100) * height;
+        const radius = 7 * 3;
 
-    // Canvas dimensions (we assume the canvas fills the container)
-    const canvasWidth = canvas.width;
-    const canvasHeight = canvas.height;
+        // Color interpolation from green → yellow → red
+        let red: number;
+        let green: number;
+        const blue = 0;
+        if (pt.intensity <= 0.5) {
+          red = Math.round((pt.intensity / 0.5) * 255);
+          green = 255;
+        } else {
+          red = 255;
+          green = Math.round((1 - (pt.intensity - 0.5) / 0.5) * 255);
+        }
 
-    // Draw each heatmap point as a radial gradient circle
-    points.forEach((point) => {
-      // Convert the x and y percentages into pixel values.
-      const x = (point.x / 100) * canvasWidth;
-      const y = (point.y / 100) * canvasHeight;
+        const centerColor = `rgba(${red}, ${green}, ${blue}, 0.7)`;
+        const edgeColor = `rgba(${red}, ${green}, ${blue}, 0.4)`;
 
-      // Define the radius as needed.
-      const radius = 5 * 3;
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+        gradient.addColorStop(0, centerColor);
+        gradient.addColorStop(1, edgeColor);
 
-      // Determine the color based on intensity (which is now a value between 0 and 1).
-      let red, green;
-      const blue = 0; // Always 0.
+        ctx.beginPath();
+        ctx.fillStyle = gradient;
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    };
 
-      if (point.intensity <= 0.5) {
-        // For intensities between 0 and 0.5, interpolate from green (0,255,0) to yellow (255,255,0).
-        red = Math.round((point.intensity / 0.5) * 255);
-        green = 255;
-      } else {
-        // For intensities above 0.5, interpolate from yellow (255,255,0) to red (255,0,0).
-        red = 255;
-        green = Math.round((1 - (point.intensity - 0.5) / 0.5) * 255);
-      }
-
-      // Create the center and edge colors with alpha values for opacity.
-      const centerColor = `rgba(${red}, ${green}, ${blue}, 0.7)`; // Opaque center.
-      const edgeColor = `rgba(${red}, ${green}, ${blue}, 0.4)`; // Fully transparent edge.
-
-      // Create a radial gradient from center (opaque) to edge (transparent).
-      const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-      gradient.addColorStop(0, centerColor);
-      gradient.addColorStop(1, edgeColor);
-
-      // Draw the dot using the gradient.
-      ctx.beginPath();
-      ctx.fillStyle = gradient;
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.fill();
-    });
-  }, []);
+    const frame = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(frame);
+  }, [points]);
 
   return (
     <div className="floorpPlanDiv">
       <img src={imageUrl} alt="Floor Plan" />
-      {/* Canvas overlay: pointerEvents: "none" so it doesn't block clicks */}
       <canvas
         ref={canvasRef}
-        width={800} // Set these to match your floor plan image's native resolution or container size
+        width={800}
         height={600}
         style={{
           position: "absolute",
@@ -85,53 +88,58 @@ const FloorPlanWithHeatmap = () => {
   );
 };
 
-export const HeatMapData = () => {
-  const [activeIndexHM, setActiveIndex] = useState(0);
+// Parent component that handles fetching & state
+export const HeatMapData: React.FC = () => {
+  const [activeIndexHM, setActiveIndex] = useState<number>(0);
+  const [points, setPoints] = useState<HeatmapPoint[]>();
+  useEffect(() => {
+    handleButtonClick(0);
+  }, []);
 
-  // Update active index on button click
-  const handleButtonClick = (index: React.SetStateAction<number>) => {
+  const handleButtonClick = (index: number) => {
     setActiveIndex(index);
+    //[60, 360, 720, 1080, 1440];
+    const timeframeMap = [1, 3, 5, 10, 20];
+    const minutes = timeframeMap[index];
+
+    fetch(`http://localhost:5001/api/heatmap/${minutes}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Server responded ${res.status}`);
+        return res.json();
+      })
+      .then((data: { heatmap: Record<string, HeatmapPoint[]> }) => {
+        const map = data.heatmap;
+        // grab the first-value in that object:
+        const firstKey = Object.keys(map)[0];
+        const newPoints = map[firstKey];
+        setPoints(newPoints);
+      })
+      .catch((err) => {
+        console.error("Heatmap fetch error:", err);
+      });
   };
 
   return (
     <div className="heatMapDiv">
       <div className="heatLeftSidebar">
         <h1 className="heatMapTitle">Select Timeframe</h1>
-        <button
-          //We can create css for both states and use inline JS to go between both states...
-          className={`heatMapButton ${activeIndexHM === 0 ? "active" : ""}`}
-          onClick={() => handleButtonClick(0)}
-        >
-          Last Hour
-        </button>
-
-        <button
-          className={`heatMapButton ${activeIndexHM === 1 ? "active" : ""}`}
-          onClick={() => handleButtonClick(1)}
-        >
-          6 Hours
-        </button>
-        <button
-          className={`heatMapButton ${activeIndexHM === 2 ? "active" : ""}`}
-          onClick={() => handleButtonClick(2)}
-        >
-          12 Hours
-        </button>
-        <button
-          className={`heatMapButton ${activeIndexHM === 3 ? "active" : ""}`}
-          onClick={() => handleButtonClick(3)}
-        >
-          18 Hours
-        </button>
-        <button
-          className={`heatMapButton ${activeIndexHM === 4 ? "active" : ""}`}
-          onClick={() => handleButtonClick(4)}
-        >
-          24 Hours
-        </button>
+        {["Last Hour", "6 Hours", "12 Hours", "18 Hours", "24 Hours"].map(
+          (label, i) => (
+            <button
+              key={i}
+              className={`heatMapButton ${activeIndexHM === i ? "active" : ""}`}
+              onClick={() => handleButtonClick(i)}
+            >
+              {label}
+            </button>
+          )
+        )}
       </div>
       <div className="mapDiv">
-        <FloorPlanWithHeatmap />
+        <FloorPlanWithHeatmap points={points} />
       </div>
     </div>
   );
