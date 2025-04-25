@@ -136,14 +136,9 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
     const interval = setInterval(() => {
       // Replace this line with your API call when ready.
       //API call:
-<<<<<<< HEAD
-      fetchPositionData(1);
-      //setObjects(mock_obj_data.objects);
-=======
       //fetchPositionData(1);
       // remove this and uncomment fetchPositionData(1) for API call
       setObjects(mock_obj_data.objects);
->>>>>>> a1f6d9b (added camera icon)
     }, 500);
 
     return () => clearInterval(interval);
