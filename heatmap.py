@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 def create_heatmap(timeframe_min, mapmanager, filename="heatmap_data.jl"):
@@ -9,8 +9,9 @@ def create_heatmap(timeframe_min, mapmanager, filename="heatmap_data.jl"):
     filename:    path to JSON-Lines (.jl) file where each line is a JSON array of observations
     """
     # 1. compute cutoff
-    now = datetime.utcnow()
-    cutoff = now - timedelta(minutes=timeframe_min)
+    now = datetime.now().astimezone()
+
+    cutoff = now - timedelta(minutes=int(timeframe_min))
 
     # 2. load & flatten all observations from the .jl file
     observations = []

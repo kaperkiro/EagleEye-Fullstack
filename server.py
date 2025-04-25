@@ -78,10 +78,10 @@ def create_alarm_zone():
     )
 
 
-@app.route("/api/heatmap/<timeframe>", methods=["POST"])
+@app.route("/api/heatmap/<timeframe>", methods=["GET"])
 def get_heatmap(timeframe):
     payload = heatmap.create_heatmap(timeframe, map_instance)
-    print(payload)
+    return jsonify({"heatmap": payload}), 200
 
 
 @app.route("/api/alarms/<string:alarm_id>", methods=["DELETE"])
@@ -204,7 +204,6 @@ def get_camera_positions():
     """Returns the camera positions in relative coordinates."""
     if mqtt_client:
         camera_positions = map_manager.camera_relative_coords
-        print("All camera positions: " + camera_positions)
         if not camera_positions:
             return jsonify({"message": "No camera positions available"}), 503
         return jsonify({"cam_pos": camera_positions}), 200
