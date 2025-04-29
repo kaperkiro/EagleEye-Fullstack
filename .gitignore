@@ -30,10 +30,6 @@ database.db  # Your specific SQLite database
 
 # Video frame storage
 frames/
-*.jpg
-*.jpeg
-*.png
-*.mp4
 
 # IDE and editor files
 .vscode/

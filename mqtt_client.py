@@ -47,6 +47,7 @@ class MqttClient:
         """Dynamic handling of multiple messages
         Stores all detections in a dictionary and only updates its own view of the data
         """
+        print("got mqtt")
         try:
             parts = msg.topic.split("/")
             camera_id = int(parts[1])  # TODO: FIX HARD CODED CAMERA ID

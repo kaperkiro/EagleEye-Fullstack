@@ -32,7 +32,7 @@ class Application:
             # Clear all streams from config.json
             clear_streams()
             # Add cameras to config.json
-            test_cam = Camera(ip="192.168.0.102")
+            test_cam = Camera()
 
             # Initialize the map holder
             map_hol = MapManager(
