@@ -23,6 +23,16 @@ class Application:
 
     def run(self):
         try:
+            logger.info("Starting MQTT broker")
+            self.broker.start()
+
+            logger.info("Connecting MQTT client")
+            self.mqtt_client.connect()
+            self.mqtt_client.start_background_loop()
+            # Clear all streams from config.json
+            clear_streams()
+            # Add cameras to config.json
+            test_cam = Camera(ip="192.168.0.102")
 
             # Initialize the map holder
             map_hol = MapManager(
@@ -33,32 +43,18 @@ class Application:
                     (59.3250, 18.0710),  # tr
                     (59.3240, 18.0710),
                 ],
-                "test_map.png",
+                "assets/floor_plan.jpg",
             )
-
-            logger.info("Starting MQTT broker")
-            self.broker.start()
-
-            logger.info("Connecting MQTT client")
-            self.mqtt_client.connect()
-            self.mqtt_client.start_background_loop()
-
-            # Clear all streams from config.json
-            clear_streams()
-
-            # Add cameras to config.json
-            test_cam = Camera()
-
             logger.info("Starting RTSP to WebRTC server")
-            threading.Thread(target=start_rtsp_to_webrtc).start()
+            threading.Thread(target=start_rtsp_to_webrtc, daemon=True).start()
 
             logger.info("Starting Flask server")
             threading.Thread(
-                target=run_flask_server, args=(self.mqtt_client, map_hol)
+                target=run_flask_server, args=(self.mqtt_client, map_hol), daemon=True
             ).start()
 
             logger.info("Starting camera configuration")
-            Calibration(test_cam, self.mqtt_client)
+            # Calibration(test_cam, self.mqtt_client)
 
             self.cameras.append(test_cam)
 

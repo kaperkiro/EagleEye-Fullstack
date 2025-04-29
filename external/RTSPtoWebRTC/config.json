@@ -6,7 +6,7 @@
         "1": {
             "on_demand": false,
             "disable_audio": true,
-            "url": "rtsp://student:student_pass@192.168.0.93/axis-media/media.amp"
+            "url": "rtsp://student:student_pass@192.168.0.102/axis-media/media.amp"
         }
     }
 }

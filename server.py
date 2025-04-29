@@ -21,11 +21,16 @@ CORS(app)
 ALARM_FILE = "alarms.json"
 MAP_PATH = "map.jpg"
 
-global mqtt_client
-mqtt_client = None
 
-global map_manager
-map_manager = None
+def run_flask_server(
+    mqtt_client_instance: MqttClient, map_manager_instance: MapManager
+):
+    global mqtt_client
+    mqtt_client = mqtt_client_instance
+    global map_manager
+    map_manager = map_manager_instance
+    logging.info("Starting Flask server...")
+    app.run(debug=True, port=5001, use_reloader=False, host="0.0.0.0")
 
 
 def load_alarms():
@@ -80,7 +85,7 @@ def create_alarm_zone():
 
 @app.route("/api/heatmap/<timeframe>", methods=["GET"])
 def get_heatmap(timeframe):
-    payload = heatmap.create_heatmap(timeframe, map_instance)
+    payload = heatmap.create_heatmap(timeframe, map_manager)
     return jsonify({"heatmap": payload}), 200
 
 
@@ -211,17 +216,6 @@ def get_camera_positions():
         return jsonify({"message": "MQTT client not available"}), 503
 
 
-def run_flask_server(
-    mqtt_client_instance: MqttClient, map_manager_instance: MapManager
-):
-    global mqtt_client
-    mqtt_client = mqtt_client_instance
-    global map_manager
-    map_manager = map_manager_instance
-    logging.info("Starting Flask server...")
-    app.run(debug=True, port=5001, use_reloader=False, host="0.0.0.0")
-
-
 if __name__ == "__main__":
     # Initialize the map holder
     map_instance = MapManager(
@@ -253,4 +247,4 @@ if __name__ == "__main__":
     publisher.connect()
     threading.Thread(target=publisher.run, daemon=True).start()
 
-    run_flask_server(mqtt_instance, map_instance)
+    # run_flask_server(mqtt_instance, map_instance)

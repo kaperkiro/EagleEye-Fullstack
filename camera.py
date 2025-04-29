@@ -40,7 +40,7 @@ class Camera:
         )
         self._add_to_config()
 
-    #    self._set_cameras_geocoords()
+    #   self._set_cameras_geocoords()
 
     def configure_camera(
         self,
