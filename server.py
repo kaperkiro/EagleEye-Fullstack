@@ -6,6 +6,7 @@ import json
 import logging
 import threading
 from MqttPublisher.mqtt_pub import MqttPublisher
+import heatmap
 
 # Removed invalid import statement. If 'map' is a custom module, use 'import map'.
 
@@ -20,11 +21,16 @@ CORS(app)
 ALARM_FILE = "alarms.json"
 MAP_PATH = "map.jpg"
 
-global mqtt_client
-mqtt_client = None
 
-global map_manager
-map_manager = None
+def run_flask_server(
+    mqtt_client_instance: MqttClient, map_manager_instance: MapManager
+):
+    global mqtt_client
+    mqtt_client = mqtt_client_instance
+    global map_manager
+    map_manager = map_manager_instance
+    logging.info("Starting Flask server...")
+    app.run(debug=True, port=5001, use_reloader=False, host="0.0.0.0")
 
 
 def load_alarms():
@@ -77,6 +83,12 @@ def create_alarm_zone():
     )
 
 
+@app.route("/api/heatmap/<timeframe>", methods=["GET"])
+def get_heatmap(timeframe):
+    payload = heatmap.create_heatmap(timeframe, map_manager)
+    return jsonify({"heatmap": payload}), 200
+
+
 @app.route("/api/alarms/<string:alarm_id>", methods=["DELETE"])
 def delete_alarm(alarm_id):
     """
@@ -92,12 +104,11 @@ def delete_alarm(alarm_id):
     return jsonify({"message": "Alarm zone removed successfully"}), 200
 
 
-@app.route("/api/alarms/status/<string:alarm_id>", methods=["POST"])
+@app.route("/api/alarms/status/<string:alarm_id>", methods=["POST", "PATCH"])
 def status_alarm(alarm_id):
     """
     POST endpoint for changing the status of an alarm zone by its ID.
     """
-
     if not alarm_id:
         return jsonify({"message": "No zone included "}), 404
     alarms = load_alarms()
@@ -198,23 +209,11 @@ def get_camera_positions():
     """Returns the camera positions in relative coordinates."""
     if mqtt_client:
         camera_positions = map_manager.camera_relative_coords
-        print("All camera positions: " + camera_positions)
         if not camera_positions:
             return jsonify({"message": "No camera positions available"}), 503
         return jsonify({"cam_pos": camera_positions}), 200
     else:
         return jsonify({"message": "MQTT client not available"}), 503
-
-
-def run_flask_server(
-    mqtt_client_instance: MqttClient, map_manager_instance: MapManager
-):
-    global mqtt_client
-    mqtt_client = mqtt_client_instance
-    global map_manager
-    map_manager = map_manager_instance
-    logging.info("Starting Flask server...")
-    app.run(debug=True, port=5001, use_reloader=False, host="0.0.0.0")
 
 
 if __name__ == "__main__":
@@ -251,4 +250,4 @@ if __name__ == "__main__":
     publisher3.connect()
     threading.Thread(target=publisher3.run, daemon=True).start()
 
-    run_flask_server(mqtt_instance, map_instance)
+    # run_flask_server(mqtt_instance, map_instance)
