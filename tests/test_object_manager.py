@@ -4,8 +4,8 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from object_manager import ObjectManager
-from helper import check_if_same_observation
+from app.objects.manager import ObjectManager
+from app.utils.helper import check_if_same_observation
 import sys
 
 

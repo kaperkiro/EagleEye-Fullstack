@@ -1,14 +1,17 @@
-from broker_manager import BrokerManager
-from database import Database
-from mqtt_client import MqttClient
-from webrtc_server import start_rtsp_to_webrtc
-from server import run_flask_server
+import os, sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from app.mqtt.broker import BrokerManager
+from app.db.database import Database
+from app.mqtt.client import MqttClient
+from app.camera.webrtc import start_rtsp_to_webrtc
+from app.server import run_flask_server
 import threading
 import time
 import logging
-from camera import Camera, clear_streams
-from calibration import Calibration
-from map_manager import MapManager
+from app.camera.camera import Camera, clear_streams
+from app.map.manager import MapManager
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +46,7 @@ class Application:
                     (59.3250, 18.0710),  # tr
                     (59.3240, 18.0710),
                 ],
-                "assets/floor_plan.jpg",
+                "static/floor_plan.jpg",
             )
             logger.info("Starting RTSP to WebRTC server")
             threading.Thread(target=start_rtsp_to_webrtc, daemon=True).start()
@@ -54,7 +57,6 @@ class Application:
             ).start()
 
             logger.info("Starting camera configuration")
-            # Calibration(test_cam, self.mqtt_client)
 
             self.cameras.append(test_cam)
 

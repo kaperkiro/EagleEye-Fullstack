@@ -1,8 +1,8 @@
 import paho.mqtt.client as mqtt
 import json
 from typing import List, Dict, Any
-from helper import check_if_same_observation
-from object_manager import ObjectManager
+from app.utils.helper import check_if_same_observation
+from app.objects.manager import ObjectManager
 
 
 class MqttClient:

@@ -3,12 +3,12 @@ import os
 
 
 def start_rtsp_to_webrtc():
-    # Define the path to the RTSPtoWebRTC directory relative to this script
-    script_dir = os.path.dirname(
-        os.path.abspath(__file__)
-    )  # Directory of the Python script
+    # Locate the project root directory (three levels up) and external folder
+    root_dir = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    )
     rtsp_dir = os.path.join(
-        script_dir, "external", "RTSPtoWebRTC"
+        root_dir, "external", "RTSPtoWebRTC"
     )  # Path to RTSPtoWebRTC
 
     # Command to run the Go program

@@ -1,11 +1,14 @@
-import os
+import os, sys
+
+# Ensure project root is on PYTHONPATH for direct script runs
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
 import numpy as np
 import cv2
-from broker_manager import BrokerManager
-from mqtt_client import MqttClient
+from app.mqtt.broker import BrokerManager
+from app.mqtt.client import MqttClient
 
 
 # Updated FloorplanGUI class to integrate MQTT

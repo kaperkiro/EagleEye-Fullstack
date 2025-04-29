@@ -1,24 +1,24 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import os
+import sys
 import uuid
 import json
 import logging
 import threading
-from MqttPublisher.mqtt_pub import MqttPublisher
-import heatmap
 
-# Removed invalid import statement. If 'map' is a custom module, use 'import map'.
-
-# Import your MqttClient class
-from mqtt_client import MqttClient
-from map_manager import MapManager
+# Ensure project root (parent of app) is on PYTHONPATH when running as a script
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from app.mqtt.publisher import MqttPublisher
+from app.heatmap.heatmap import create_heatmap
+from app.mqtt.client import MqttClient
+from app.map.manager import MapManager
 
 logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
 CORS(app)
 
-ALARM_FILE = "alarms.json"
+ALARM_FILE = "data/alarms.json"
 MAP_PATH = "map.jpg"
 
 
@@ -85,7 +85,7 @@ def create_alarm_zone():
 
 @app.route("/api/heatmap/<timeframe>", methods=["GET"])
 def get_heatmap(timeframe):
-    payload = heatmap.create_heatmap(timeframe, map_manager)
+    payload = create_heatmap(timeframe, map_manager)
     return jsonify({"heatmap": payload}), 200
 
 
@@ -179,8 +179,11 @@ def get_map():
     This endpoint is used to send the map file to the client.
     """
     print("Sending map file")
+    print(map_manager.file_path)
     if os.path.exists(map_manager.file_path):
-        return send_file(map_manager.file_path)
+        return send_file(
+            map_manager.file_path,
+        )
     else:
         return jsonify({"message": "Map file not found"}), 404
 
@@ -198,6 +201,9 @@ def get_camera_positions():
 
 
 if __name__ == "__main__":
+
+    assets_dir = os.path.join(os.path.dirname(__file__), "assets")
+    floor_plan = os.path.join(assets_dir, "floor_plan.jpg")
     # Initialize the map holder
     map_instance = MapManager(
         "Local House",
@@ -207,7 +213,7 @@ if __name__ == "__main__":
             (59.3250, 18.0710),
             (59.3240, 18.0710),
         ],
-        "assets/floor_plan.jpg",
+        floor_plan,
         {
             1: (59.3249, 18.0701),  # top-left
             2: (59.3242, 18.0709),  # bottom-right
