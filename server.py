@@ -173,25 +173,6 @@ def get_observations():
         return jsonify({"message": "MQTT client not available"}), 503
 
 
-@app.route("/test", methods=["GET"])
-def test() -> jsonify:
-    """Test endpoint to check if the server is running and to get a test detection.
-    Returns:
-        jsonify: _jsonify with a test detection. Use this with the mock mqtt_pub.py
-    """
-
-    num = 1
-    print(f"API request for test from camera {num}")
-    if mqtt_client:
-        if mqtt_client.position:
-            x, y = map_manager.convert_to_relative(mqtt_client.position[0])
-            position = [1, x, y]
-            detections = mqtt_client.get_detections(num)
-            return jsonify({"position": position})
-        else:
-            return jsonify({"message": "No position data available"}), 503
-
-
 @app.route("/map")
 def get_map():
     """
@@ -228,8 +209,8 @@ if __name__ == "__main__":
         ],
         "assets/floor_plan.jpg",
         {
-            1: (59.3250, 18.0701),  # top-left
-            2: (59.3241, 18.0710),  # bottom-right
+            1: (59.3249, 18.0701),  # top-left
+            2: (59.3242, 18.0709),  # bottom-right
             3: (59.3245, 18.0705),  # center
         },
     )
@@ -250,4 +231,4 @@ if __name__ == "__main__":
     publisher3.connect()
     threading.Thread(target=publisher3.run, daemon=True).start()
 
-    # run_flask_server(mqtt_instance, map_instance)
+    run_flask_server(mqtt_instance, map_instance)

@@ -24,7 +24,6 @@ class MqttClient:
         self.dict_position: Dict[int, List[tuple]] = (
             {}
         )  # Camera ID -> [latitude, longitude]
-        self.position = []
 
     def _setup_callbacks(self) -> None:
         self.client.on_connect = self._on_connect
@@ -47,10 +46,9 @@ class MqttClient:
         """Dynamic handling of multiple messages
         Stores all detections in a dictionary and only updates its own view of the data
         """
-        print("got mqtt")
         try:
             parts = msg.topic.split("/")
-            camera_id = int(parts[1])  # TODO: FIX HARD CODED CAMERA ID
+            camera_id = int(parts[1])
             payload = json.loads(msg.payload.decode())
             # Set each uniques cameras observation
             frame_data = payload.get("frame", {})
@@ -58,29 +56,9 @@ class MqttClient:
             self.detections[camera_id] = observations
             # Update global object tracking
             self.object_manager.add_observations(camera_id, observations)
-            # self.set_positions_from_observations(camera_id, frame_data)
 
         except (json.JSONDecodeError, ValueError) as e:
             print(f"Failed to parse MQTT message: {e}")
-
-    def set_positions_from_observations(self, camera_id: str, frame: dict) -> None:
-        """Set the positions of the camera from the observations in the payload."""
-        data = frame["observations"]
-        if camera_id in self.dict_position:
-            self.dict_position[camera_id] = []
-        for obs in data:
-            if "geoposition" in obs:
-                # Create key for camera ID if it doesn't exist and update
-                # the coordinates
-                if camera_id not in self.dict_position:
-                    self.dict_position[camera_id] = []
-
-                self.dict_position[camera_id].append(
-                    (
-                        obs["geoposition"]["latitude"],
-                        obs["geoposition"]["longitude"],
-                    )
-                )
 
     def connect(self) -> None:
         self.client.connect(self.broker_host, self.broker_port, self.keepalive)
