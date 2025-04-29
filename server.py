@@ -227,7 +227,7 @@ if __name__ == "__main__":
             (59.3250, 18.0710),
             (59.3240, 18.0710),
         ],
-        "floor_plan.jpg",
+        "assets/floor_plan.jpg",
         {
             1: (59.3250, 18.0701),  # top-left
             2: (59.3241, 18.0710),  # bottom-right
@@ -239,13 +239,16 @@ if __name__ == "__main__":
     mqtt_instance.connect()
     mqtt_instance.start_background_loop()
 
-    # Start dummy publisher for integrated testing
-    publisher = MqttPublisher()
+    publisher = MqttPublisher(camera_id=1)
     publisher.connect()
     threading.Thread(target=publisher.run, daemon=True).start()
 
-    publisher = MqttPublisher(camera_id=100)
-    publisher.connect()
-    threading.Thread(target=publisher.run, daemon=True).start()
+    publisher2 = MqttPublisher(camera_id=2)
+    publisher2.connect()
+    threading.Thread(target=publisher2.run, daemon=True).start()
+
+    publisher3 = MqttPublisher(camera_id=3)
+    publisher3.connect()
+    threading.Thread(target=publisher3.run, daemon=True).start()
 
     run_flask_server(mqtt_instance, map_instance)
