@@ -26,6 +26,9 @@ class Application:
     def find_cameras(self):
         try:
             scan_results = scan_axis_cameras()
+            if not scan_results: # För att hitta när man kör via routern
+                logger.info("No Axis cameras found at 192.168.0.0/24 trying 192.168.1.0/24")
+                scan_results = scan_axis_cameras(ip_range="192.168.1.0/24")
             if scan_results:
                 for id, ip, mac, manufacturer in scan_results:
                     self.cameras.append(Camera(ip=ip, id=id))
