@@ -9,3 +9,6 @@ flask-cors
 numpy
 pillow
 requests
+netifaces
+scapy
+mac_vendor_lookup
