@@ -1,7 +1,6 @@
 import paho.mqtt.client as mqtt
 import json
 from typing import List, Dict, Any
-from app.utils.helper import check_if_same_observation
 from app.objects.manager import ObjectManager
 
 
@@ -17,7 +16,6 @@ class MqttClient:
         self.broker_port = broker_port
         self.keepalive = keepalive
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-        self.detections: Dict[int, List[Dict]] = {}  # Camera ID -> detections
         self.object_manager = ObjectManager()
         self._setup_callbacks()
 
@@ -38,7 +36,7 @@ class MqttClient:
         properties: Any,
     ) -> None:
         print(f"Connected with result code {reason_code}")
-        self.subscribe("axis/+/frame_metadata", qos=0)  # TODO: HARDCODED TOPIC
+        self.subscribe("+/frame_metadata", qos=0)
 
     def _on_message(
         self, client: mqtt.Client, userdata: Any, msg: mqtt.MQTTMessage
@@ -47,13 +45,13 @@ class MqttClient:
         Stores all detections in a dictionary and only updates its own view of the data
         """
         try:
-            parts = msg.topic.split("/")
-            camera_id = int(parts[1])
+
             payload = json.loads(msg.payload.decode())
-            # Set each uniques cameras observation
-            frame_data = payload.get("frame", {})
-            observations = frame_data.get("observations", [])
-            self.detections[camera_id] = observations
+
+            observations = payload.get("frame", {}).get("observations", [])
+            camera_id = msg.topic.split("/")[0] # Extract camera ID from topic ("cam_id"/frame_metadata)
+            # print(f"Received observations on cam {camera_id}: {observations}\n")
+
             # Update global object tracking
             self.object_manager.add_observations(camera_id, observations)
 

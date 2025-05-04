@@ -1,39 +1,33 @@
 def check_if_same_observation(obs1: dict, obs2: dict) -> bool:
-    """Checks if the two different observations are the same object.
-
-    Same if geocoords are max 1.5 m apart and clothes
+    """Checks if two different observations are of the same object.
+    Same if geocoords are max 1.5 m apart and clothing colors match.
     """
     x = 1.5  # meters
-    max_distance = x / 111320
+    max_distance = x / 111320  # Convert meters to degrees
 
-    # Get all data from the observations
+    # Get data from observations
+    obs1_class = obs1.get("class", {})
+    obs2_class = obs2.get("class", {})
 
-    obs1_class = obs1["class"]
-    obs2_class = obs2["class"]
-
-    if obs1_class["type"] != obs2_class["type"]:
+    if obs1_class.get("type") != obs2_class.get("type"):
         return False
 
-    obs1_upper_clothing_colors = obs1_class["upper_clothing_colors"][0]["name"]
-    obs2_upper_clothing_colors = obs2_class["upper_clothing_colors"][0]["name"]
-    obs1_lower_clothing_colors = obs1_class["lower_clothing_colors"][0]["name"]
-    obs2_lower_clothing_colors = obs2_class["lower_clothing_colors"][0]["name"]
+    # Safely access clothing colors
+    obs1_upper = obs1_class.get("upper_clothing_colors", [{}])[0].get("name", "")
+    obs2_upper = obs2_class.get("upper_clothing_colors", [{}])[0].get("name", "")
+    obs1_lower = obs1_class.get("lower_clothing_colors", [{}])[0].get("name", "")
+    obs2_lower = obs2_class.get("lower_clothing_colors", [{}])[0].get("name", "")
 
-    if (
-        obs1_upper_clothing_colors != obs2_upper_clothing_colors
-        or obs1_lower_clothing_colors != obs2_lower_clothing_colors
-    ):
+    if obs1_upper != obs2_upper or obs1_lower != obs2_lower:
         return False
 
-    obs1_coords = obs1["geoposition"]
-    obs2_coords = obs2["geoposition"]
+    obs1_coords = obs1.get("geoposition", {})
+    obs2_coords = obs2.get("geoposition", {})
 
-    # Arbiterary distance threshold of 1.5 m
-    if (
-        abs(obs1_coords["latitude"] - obs2_coords["latitude"]) > max_distance
-        and abs(obs1_coords["longitude"] - obs2_coords["longitude"]) > max_distance
-    ):
-
+    # Check if coordinates are within 1.5 meters
+    lat_diff = abs(obs1_coords.get("latitude", 0) - obs2_coords.get("latitude", 0))
+    lon_diff = abs(obs1_coords.get("longitude", 0) - obs2_coords.get("longitude", 0))
+    if lat_diff > max_distance or lon_diff > max_distance:
         return False
 
     return True
