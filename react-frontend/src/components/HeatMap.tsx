@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { heatmapData } from "./MockData";
+
 import { useFloorPlan } from "./floorPlanProvider";
 import "../css/HeatMap.css";
 
@@ -91,7 +91,8 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
 // Parent component that handles fetching & state
 export const HeatMapData: React.FC = () => {
   const [activeIndexHM, setActiveIndex] = useState<number>(0);
-  const [points, setPoints] = useState<HeatmapPoint[]>();
+  const [points, setPoints] = useState<HeatmapPoint[]>([]);
+
   useEffect(() => {
     handleButtonClick(0);
   }, []);
