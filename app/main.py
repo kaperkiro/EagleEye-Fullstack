@@ -65,7 +65,12 @@ class Application:
                     (59.3250, 18.0710),  # tr
                     (59.3240, 18.0710),
                 ],
-                floor_plan
+                floor_plan,
+                 {
+            1: (59.3249, 18.0701),  # top-left
+            2: (59.3242, 18.0709),  # bottom-right
+            3: (59.3245, 18.0705),  # center
+            },
             )
             map_hol.create_corners((58.396045, 15.578455))
             logger.info("Starting RTSP to WebRTC server")

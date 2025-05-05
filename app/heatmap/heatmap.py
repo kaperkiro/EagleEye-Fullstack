@@ -42,8 +42,12 @@ def create_heatmap(timeframe_min, mapmanager, filename="heatmap_data.jl"):
     counts = [[0] * grid_size for _ in range(grid_size)]
 
     for obs in recent:
-        lat = obs["geoposition"]["latitude"]
-        lon = obs["geoposition"]["longitude"]
+        try:
+            lat = obs["geoposition"]["latitude"]
+            lon = obs["geoposition"]["longitude"]
+        except KeyError:
+            print("Missing lat/lon in observation:", obs)
+            continue
         u, v = mapmanager.convert_to_relative((lat, lon))
         # clamp and integer‐bin
         u = max(0, min(u, 99.999))

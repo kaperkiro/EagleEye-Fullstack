@@ -98,8 +98,8 @@ class MapManager:
         )  # adjust by cos(lat)
         lat0, lon0 = camera_geocoords
         # 5 m in lat/lon degrees
-        lat_offset = 2.5 / M_PER_DEG_LAT
-        lon_offset = 2.5 / M_PER_DEG_LON
+        lat_offset = 3 / M_PER_DEG_LAT
+        lon_offset = 3 / M_PER_DEG_LON
         # Create corners
         tl = (lat0 + lat_offset, lon0 - lon_offset)
         bl = (lat0 - lat_offset, lon0 - lon_offset)

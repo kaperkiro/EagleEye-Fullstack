@@ -48,7 +48,7 @@ class MqttPublisher:
         self.broker_host = broker_host
         self.broker_port = broker_port
         # Set topic based on camera_id
-        self.topic = f"axis/{self.camera_id}/frame_metadata"
+        self.topic = f"{self.camera_id}/frame_metadata"
         self.publish_interval = publish_interval
         self.speed = speed
         # Derive track_id from camera_id
