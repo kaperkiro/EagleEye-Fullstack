@@ -9,7 +9,7 @@ const WebRTCStream: React.FC = () => {
   const [active, setActive] = useState(false);
 
   useEffect(() => {
-    const streamId = "camera1";
+    const streamId = "1";
     const baseUrl = "http://localhost:8083/stream";
 
     const pc = new RTCPeerConnection({
