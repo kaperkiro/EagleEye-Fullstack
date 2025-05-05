@@ -53,6 +53,7 @@ requirements.txt.lock
 *.swo
 *.out
 *.csv
+*.jl
 core
 frames
 test
