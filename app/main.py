@@ -52,10 +52,6 @@ class Application:
             self.mqtt_client.connect()
             self.mqtt_client.start_background_loop()
 
-
-            assets_dir = os.path.join(os.path.dirname(__file__), "assets")
-            floor_plan = os.path.join(assets_dir, "floor_plan.jpg")
-
             # Initialize the map holder
             map_hol = MapManager(
                 "Local House",
@@ -65,12 +61,11 @@ class Application:
                     (59.3250, 18.0710),  # tr
                     (59.3240, 18.0710),
                 ],
-                floor_plan,
-                 {
-            1: (59.3249, 18.0701),  # top-left
-            2: (59.3242, 18.0709),  # bottom-right
-            3: (59.3245, 18.0705),  # center
-            },
+                {
+                    1: (59.3249, 18.0701),  # top-left
+                    2: (59.3242, 18.0709),  # bottom-right
+                    3: (59.3245, 18.0705),  # center
+                },
             )
             map_hol.create_corners((58.396045, 15.578455))
             logger.info("Starting RTSP to WebRTC server")

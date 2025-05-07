@@ -1,5 +1,6 @@
 import math
 import numpy as np
+import os
 
 
 def clamp(value, min_value, max_value):
@@ -12,7 +13,6 @@ class MapManager:
         self,
         name: str,
         corner_coords: list,
-        file_path: str,
         camera_geocoords: dict[tuple] = None,
     ):
         """Holds the current map used in the frontend to convert to relative xy coordinates
@@ -29,7 +29,7 @@ class MapManager:
         """
         self.name = name
         self.corner_coords = corner_coords  # [(lat, lon), ...] in order TL, BL, TR, BR
-        self.file_path = file_path
+        self.file_path = self._get_floor_plan()  # Get the floor plan image file path
         self.camera_geocoords = camera_geocoords  # {camera_id: (x, y)}
         # Compute relative coordinates for each camera using convert_to_relative
         if self.camera_geocoords:
@@ -39,6 +39,17 @@ class MapManager:
             }
         else:
             self.camera_relative_coords = {}
+
+    def _get_floor_plan(self):
+        """Get the floor plan of the map."""
+        assets_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../assets")) # get the assets dir
+        for ext in ("png", "jpg"):
+            floor_plan = os.path.join(assets_dir, f"floor_plan.{ext}")
+            if os.path.exists(floor_plan):
+                return floor_plan
+        raise FileNotFoundError(
+            f"Floor plan not found in {assets_dir}. Please add a floor_plan.png or floor_plan.jpg."
+        )
 
     def __str__(self):
         return f"Map(name={self.name}, corner_coords={self.corner_coords}, file_path={self.file_path})"
