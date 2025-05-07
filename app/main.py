@@ -11,7 +11,10 @@ import time
 import logging
 from app.camera.camera import Camera, clear_streams
 from app.map.manager import MapManager
+from app.map.map_config_gui import MapConfigGUI
 from app.camera.arp_scan import scan_axis_cameras
+import tkinter as tk
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +25,9 @@ class Application:
         self.mqtt_client = MqttClient()
         self.running = True
         self.cameras = []
+        self.map_config = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "map", "map_config.json"
+        )
 
     def find_cameras(self):
         try:
@@ -51,6 +57,20 @@ class Application:
             logger.info("Connecting MQTT client")
             self.mqtt_client.connect()
             self.mqtt_client.start_background_loop()
+            
+            # load map config from file if it exists
+            if os.path.exists(self.map_config):
+                json_file = open(self.map_config, "r")
+                self.map_config = json.load(json_file)
+                json_file.close()
+                logger.info("Map config loaded from file")
+            else:
+                logger.info("Map config file not found, creating new one")
+                MapConfigGUI()
+                json_file = open(self.map_config, "r")
+                self.map_config = json.load(json_file)
+                json_file.close()
+                
 
             # Initialize the map holder
             map_hol = MapManager(
