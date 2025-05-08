@@ -18,6 +18,15 @@ class BrokerManager:
                 return True
             except (socket.timeout, ConnectionRefusedError):
                 return False
+            
+    def stop(self) -> None:
+        if self.is_running():
+            print("Stopping Mosquitto broker...")
+            subprocess.run(
+                "pkill -f mosquitto", shell=True, check=True
+            )
+        else:
+            print("Mosquitto is not running.")
 
     def start(self) -> None:
         if self.is_running():

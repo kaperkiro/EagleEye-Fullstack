@@ -36,7 +36,7 @@ class MqttClient:
         properties: Any,
     ) -> None:
         print(f"Connected with result code {reason_code}")
-        self.subscribe("+/frame_metadata", qos=0)
+        self.subscribe("+/frame_metadata")
 
     def _on_message(
         self, client: mqtt.Client, userdata: Any, msg: mqtt.MQTTMessage
@@ -45,9 +45,7 @@ class MqttClient:
         Stores all detections in a dictionary and only updates its own view of the data
         """
         try:
-
             payload = json.loads(msg.payload.decode())
-
             observations = payload.get("frame", {}).get("observations", [])
             camera_id = msg.topic.split("/")[0] # Extract camera ID from topic ("cam_id"/frame_metadata)
             print(f"Received observations on cam {camera_id}: {observations}\n")
@@ -65,6 +63,10 @@ class MqttClient:
         self.client.subscribe(topic, qos=qos)
 
     def start_background_loop(self) -> None:
+        self.client.loop_start()
+
+    def start(self) -> None:
+        self.client.connect(self.broker_host, self.broker_port, self.keepalive)
         self.client.loop_start()
 
     def stop(self) -> None:

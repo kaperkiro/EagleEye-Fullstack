@@ -6,18 +6,17 @@ from app.mqtt.broker import BrokerManager
 from app.mqtt.client import MqttClient
 from app.camera.webrtc import start_rtsp_to_webrtc
 from app.server import run_flask_server
-import threading
-import time
-import logging
 from app.camera.camera import Camera, clear_streams
 from app.map.manager import MapManager
 from app.map.map_config_gui import MapConfigGUI
 from app.camera.arp_scan import scan_axis_cameras
-import tkinter as tk
+
+import threading
+import time
+import logging
 import json
 
 logger = logging.getLogger(__name__)
-
 
 class Application:
     def __init__(self):
@@ -25,9 +24,7 @@ class Application:
         self.mqtt_client = MqttClient()
         self.running = True
         self.cameras = []
-        self.map_config = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "map", "map_config.json"
-        )
+        self.map_config = os.path.join(os.path.dirname(os.path.abspath(__file__)), "map", "map_config.json")
 
     def find_cameras(self):
         try:
@@ -42,6 +39,20 @@ class Application:
                 logger.info("No Axis cameras found")
         except Exception as e:
             logger.error(f"Error during camera discovery: {str(e)}")
+    
+    def load_map_config(self):
+        try:
+            if os.path.exists(self.map_config):
+                with open(self.map_config, "r") as json_file:
+                    self.map_config = json.load(json_file)
+                logger.info("Map config loaded from file")
+            else:
+                logger.info("Map config file not found, creating new one")
+                MapConfigGUI()
+                with open(self.map_config, "r") as json_file:
+                    self.map_config = json.load(json_file)
+        except Exception as e:
+            logger.error(f"Error loading map config: {str(e)}")
 
     def run(self):
         try:
@@ -55,39 +66,13 @@ class Application:
             self.broker.start()
 
             logger.info("Connecting MQTT client")
-            self.mqtt_client.connect()
-            self.mqtt_client.start_background_loop()
-            
-            # load map config from file if it exists
-            if os.path.exists(self.map_config):
-                json_file = open(self.map_config, "r")
-                self.map_config = json.load(json_file)
-                json_file.close()
-                logger.info("Map config loaded from file")
-            else:
-                logger.info("Map config file not found, creating new one")
-                MapConfigGUI()
-                json_file = open(self.map_config, "r")
-                self.map_config = json.load(json_file)
-                json_file.close()
-                
+            self.mqtt_client.start()
 
-            # Initialize the map holder
-            map_hol = MapManager(
-                "Local House",
-                [
-                    (59.3250, 18.0700),  # top-left
-                    (59.3240, 18.0700),  # bl
-                    (59.3250, 18.0710),  # tr
-                    (59.3240, 18.0710),
-                ],
-                {
-                    1: (59.3249, 18.0701),  # top-left
-                    2: (59.3242, 18.0709),  # bottom-right
-                    3: (59.3245, 18.0705),  # center
-                },
-            )
-            map_hol.create_corners((58.396045, 15.578455))
+            logger.info("Checking for map config")
+            self.load_map_config()            
+                
+            map_hol = MapManager()
+
             logger.info("Starting RTSP to WebRTC server")
             threading.Thread(target=start_rtsp_to_webrtc, daemon=True).start()
 
@@ -104,13 +89,12 @@ class Application:
         finally:
             self.running = False
             self.mqtt_client.stop()
+            self.broker.stop()
             logger.info("Application shutdown complete")
-
 
 def main():
     app = Application()
     app.run()
-
 
 if __name__ == "__main__":
     main()

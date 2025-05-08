@@ -1,20 +1,10 @@
 import math
 import numpy as np
 import os
-
-
-def clamp(value, min_value, max_value):
-    """Clamp a value between min_value and max_value."""
-    return max(min(value, max_value), min_value)
-
+import json
 
 class MapManager:
-    def __init__(
-        self,
-        name: str,
-        corner_coords: list,
-        camera_geocoords: dict[tuple] = None,
-    ):
+    def __init__(self):
         """Holds the current map used in the frontend to convert to relative xy coordinates
         instead of absolute geocoordinates.
 
@@ -27,18 +17,20 @@ class MapManager:
             file_path (str): filepath of the image file of the map
             camera_geocoords (dict): dictionary of camera geocoordinates in the format {camera_id: (lat, lon)}
         """
-        self.name = name
-        self.corner_coords = corner_coords  # [(lat, lon), ...] in order TL, BL, TR, BR
+        self.map_config = json.load(open(os.path.join(os.path.dirname(__file__), "map_config.json"), "r"))
+        self.name = self.map_config["name"]
+        self.corner_coords = [(lat, lon) for lat, lon in self.map_config["corners"]] # [(lat, lon), ...] in order TL, BL, TR, BR
         self.file_path = self._get_floor_plan()  # Get the floor plan image file path
-        self.camera_geocoords = camera_geocoords  # {camera_id: (x, y)}
-        # Compute relative coordinates for each camera using convert_to_relative
-        if self.camera_geocoords:
-            self.camera_relative_coords = {
-                cam_id: self.convert_to_relative(coords)
-                for cam_id, coords in self.camera_geocoords.items()
-            }
-        else:
-            self.camera_relative_coords = {}
+        self.camera_geocoords = {}
+        self.camera_relative_coords = {}
+        for camera_id, camera_data in self.map_config["cameras"].items():
+            coords = camera_data["geocoordinates"]
+            self.camera_geocoords[int(camera_id)] = (coords[0], coords[1])
+            relative_coords = camera_data["pixel_percent"]
+            self.camera_relative_coords[int(camera_id)] = (relative_coords[0], relative_coords[1])
+        
+        print(f"camera_geocoords: {self.camera_geocoords}")
+        print(f"camera_relative_coords: {self.camera_relative_coords}")
 
     def _get_floor_plan(self):
         """Get the floor plan of the map."""
@@ -47,12 +39,7 @@ class MapManager:
             floor_plan = os.path.join(assets_dir, f"floor_plan.{ext}")
             if os.path.exists(floor_plan):
                 return floor_plan
-        raise FileNotFoundError(
-            f"Floor plan not found in {assets_dir}. Please add a floor_plan.png or floor_plan.jpg."
-        )
-
-    def __str__(self):
-        return f"Map(name={self.name}, corner_coords={self.corner_coords}, file_path={self.file_path})"
+        raise FileNotFoundError(f"Floor plan not found in {assets_dir}. Please add a floor_plan.png or floor_plan.jpg.")
 
     def convert_to_relative(self, coords: tuple) -> tuple:
         """Convert absolute geocoordinates to relative coordinates on the map.
@@ -64,7 +51,7 @@ class MapManager:
             tuple: (u, v) relative coordinates in [0..100] for x and y,
                 where (0,0)=TL, (100,100)=BR
         """
-        tl, bl, tr, br = self.corner_coords
+        tr, br, bl, tl = self.corner_coords
         lat0, lon0 = tl  # origin at top-left
 
         M_PER_DEG_LAT = 110_574  # approx meters per degree latitude
@@ -95,55 +82,9 @@ class MapManager:
 
         return (u, v)
 
-    def create_corners(self, camera_geocoords: tuple):
-        """Creates corners from camera position.
-        for now creates a square infront of the camera of 5 x 5 m eg
-        |-----|
-        |     |
-        |--*--| where * is the camera position
-        and the corners are the four corners of the square.
-        """
-        M_PER_DEG_LAT = 110_574  # approx meters per degree latitude
-        M_PER_DEG_LON = 111_320 * math.cos(
-            math.radians(camera_geocoords[0])
-        )  # adjust by cos(lat)
-        lat0, lon0 = camera_geocoords
-        # 5 m in lat/lon degrees
-        lat_offset = 3 / M_PER_DEG_LAT
-        lon_offset = 3 / M_PER_DEG_LON
-        # Create corners
-        tl = (lat0 + lat_offset, lon0 - lon_offset)
-        bl = (lat0 - lat_offset, lon0 - lon_offset)
-        tr = (lat0 + lat_offset, lon0 + lon_offset)
-        br = (lat0 - lat_offset, lon0 + lon_offset)
-
-        self.corner_coords = [tl, bl, tr, br]
-
     def return_map(self):
         """Return the map object."""
         return self
 
-
-if __name__ == "__main__":
-    # Test conversion for three cameras on a unit square map
-    corners = [(0, 0), (1, 0), (0, 1), (1, 1)]
-    camera_geocoords = {
-        1: (0, 0),  # top-left
-        2: (1, 1),  # bottom-right
-        3: (0.5, 0.5),  # center
-    }
-    mm = MapManager("test_map", corners, "dummy_path", camera_geocoords)
-    expected = {
-        1: (0.0, 0.0),
-        2: (100.0, 100.0),
-        3: (50.0, 50.0),
-    }
-    print(mm.camera_relative_coords)
-    for cam_id, exp in expected.items():
-        rel = mm.camera_relative_coords.get(cam_id)
-        print(f"{cam_id}: computed {rel}, expected {exp}")
-        assert rel is not None, f"No relative coords for {cam_id}"
-        assert (
-            abs(rel[0] - exp[0]) < 1e-2 and abs(rel[1] - exp[1]) < 1e-2
-        ), f"For {cam_id}, expected {exp}, got {rel}"
-    print("MapManager conversion tests passed.")
+    def __str__(self):
+        return f"Map(name={self.name}, corner_coords={self.corner_coords}, file_path={self.file_path})"

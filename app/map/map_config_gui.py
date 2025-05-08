@@ -508,6 +508,10 @@ class MapConfigGUI:
         y_rel = (y - bl[1]) * self.meters_per_pixel
         z = self.current_camera["z"]
 
+        # Calculate pixel coordinates as percentages
+        x_percent = (x / self.image_size[0]) * 100
+        y_percent = (y / self.image_size[1]) * 100
+
         bl_geo = self.room_corners_geo[1]
         temp_point = geodesic(meters=y_rel).destination(bl_geo, bearing=0) if y_rel >= 0 else geodesic(meters=-y_rel).destination(bl_geo, bearing=180)
         final_point = geodesic(meters=x_rel).destination(temp_point, bearing=90) if x_rel >= 0 else geodesic(meters=-x_rel).destination(temp_point, bearing=270)
@@ -517,6 +521,7 @@ class MapConfigGUI:
         self.camera_positions[camera_id] = {
             "geocoordinates": [lat, lon],
             "relative_pos": [x_rel, y_rel, z],
+            "pixel_percent": [x_percent, y_percent],
             "height": z,
             "heading": self.current_camera["heading"]
         }
@@ -645,6 +650,7 @@ class MapConfigGUI:
             "cameras": {
                 k: {
                     "geocoordinates": v["geocoordinates"],
+                    "pixel_percent": v["pixel_percent"],
                     "height": v["height"],
                     "heading": v["heading"]
                 } for k, v in self.camera_positions.items()
