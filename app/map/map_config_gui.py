@@ -31,6 +31,7 @@ class MapConfigGUI:
         self.camera_positions = {}
         self.camera_circles = []
         self.camera_labels = []
+        self.camera_arrows = []  # Store arrow IDs
 
         # Hover text and crosshair
         self.hover_text_id = None
@@ -39,6 +40,10 @@ class MapConfigGUI:
 
         # Grid setup
         self.grid_spacing = 50
+
+        # Rotation state
+        self.rotating_camera_id = None  # ID of camera being rotated
+        self.arrow_hitbox_radius = 10  # Radius for clicking arrow endpoint
 
         # Load camera IDs and IPs from axis_cameras.json
         self.camera_ids = []
@@ -192,7 +197,10 @@ class MapConfigGUI:
             borderwidth=3
         ).pack(pady=10)
 
+        # Bind mouse events
         self.canvas.bind("<Button-1>", self.handle_click)
+        self.canvas.bind("<B1-Motion>", self.handle_drag)
+        self.canvas.bind("<ButtonRelease-1>", self.handle_release)
         self.canvas.bind("<Motion>", self.preview_coordinates)
         self.mode = "room"
 
@@ -215,6 +223,7 @@ class MapConfigGUI:
         self.camera_positions = {}
         self.camera_circles = []
         self.camera_labels = []
+        self.camera_arrows = []
 
         if self.hover_text_id is not None:
             self.canvas.delete("hover_text")
@@ -236,6 +245,7 @@ class MapConfigGUI:
         self.canvas.delete("all")
 
         self.mode = "room"
+        self.rotating_camera_id = None
         self.instruction_var.set("Click 4 corners of the room (top-left, top-right, bottom-right, bottom-left)")
         self.coord_var.set("Coordinates: N/A")
 
@@ -288,11 +298,85 @@ class MapConfigGUI:
 
     def handle_click(self, event):
         x, y = event.x - self.image_offset[0], event.y - self.image_offset[1]
+        canvas_x, canvas_y = event.x, event.y
+
+        # Check if clicking near an arrow endpoint
+        if self.mode == "camera" and self.camera_positions:
+            for camera_id, config in self.camera_positions.items():
+                pixel_x = (config["pixel_percent"][0] / 100) * self.image_size[0]
+                pixel_y = (config["pixel_percent"][1] / 100) * self.image_size[1]
+                display_x = pixel_x + self.image_offset[0]
+                display_y = pixel_y + self.image_offset[1]
+                heading = config["heading"]
+                arrow_length = 30
+                rad = math.radians(heading)
+                arrow_end_x = display_x + arrow_length * math.sin(rad)
+                arrow_end_y = display_y - arrow_length * math.cos(rad)
+                dist = math.sqrt((canvas_x - arrow_end_x)**2 + (canvas_y - arrow_end_y)**2)
+                if dist <= self.arrow_hitbox_radius:
+                    self.mode = "rotate_heading"
+                    self.rotating_camera_id = camera_id
+                    self.instruction_var.set(f"Rotate Camera ID {camera_id} heading")
+                    return
+
+        # Normal click handling
         if 0 <= x <= self.image_size[0] and 0 <= y <= self.image_size[1]:
             if self.mode == "room":
                 self.add_corner(x, y)
             elif self.mode == "camera":
                 self.place_camera(x, y)
+
+    def handle_drag(self, event):
+        if self.mode != "rotate_heading" or not self.rotating_camera_id:
+            return
+
+        canvas_x, canvas_y = event.x, event.y
+        config = self.camera_positions[self.rotating_camera_id]
+        pixel_x = (config["pixel_percent"][0] / 100) * self.image_size[0]
+        pixel_y = (config["pixel_percent"][1] / 100) * self.image_size[1]
+        display_x = pixel_x + self.image_offset[0]
+        display_y = pixel_y + self.image_offset[1]
+
+        # Calculate heading: atan2 gives angle from x-axis, adjust for Tkinter (y-down) and north=0°
+        dx = canvas_x - display_x
+        dy = -(canvas_y - display_y)  # Flip y for standard math coordinates
+        heading = math.degrees(math.atan2(dx, dy)) % 360
+
+        # Update heading
+        config["heading"] = heading
+        self.camera_heading.delete(0, tk.END)
+        self.camera_heading.insert(0, f"{heading:.1f}")
+
+        # Redraw arrow
+        self.redraw_camera_arrow(self.rotating_camera_id)
+
+    def handle_release(self, event):
+        if self.mode == "rotate_heading":
+            self.mode = "camera"
+            self.rotating_camera_id = None
+            self.instruction_var.set("Select camera ID, enter height and heading, then click to place")
+
+    def redraw_camera_arrow(self, camera_id):
+        # Find and delete existing arrow
+        idx = next(i for i, (cid, _) in enumerate(zip(self.camera_positions.keys(), self.camera_arrows)) if cid == camera_id)
+        self.canvas.delete(self.camera_arrows[idx])
+
+        # Redraw arrow
+        config = self.camera_positions[camera_id]
+        pixel_x = (config["pixel_percent"][0] / 100) * self.image_size[0]
+        pixel_y = (config["pixel_percent"][1] / 100) * self.image_size[1]
+        display_x = pixel_x + self.image_offset[0]
+        display_y = pixel_y + self.image_offset[1]
+        heading = config["heading"]
+        arrow_length = 20
+        rad = math.radians(heading)
+        arrow_end_x = display_x + arrow_length * math.sin(rad)
+        arrow_end_y = display_y - arrow_length * math.cos(rad)
+        arrow_id = self.canvas.create_line(
+            display_x, display_y, arrow_end_x, arrow_end_y,
+            fill="red", arrow=tk.LAST, arrowshape=(8, 10, 3)
+        )
+        self.camera_arrows[idx] = arrow_id
 
     def add_corner(self, x, y):
         self.corners.append((x, y))
@@ -492,7 +576,7 @@ class MapConfigGUI:
             if camera_id < 1:
                 raise ValueError("Camera ID must be a positive integer")
             z = float(self.camera_height.get())
-            heading = float(self.camera_heading.get())
+            heading = float(self.camera_heading.get() or 0)  # Default to 0 if empty
             if z < 0:
                 raise ValueError("Height must be non-negative")
             if not 0 <= heading <= 360:
@@ -532,9 +616,22 @@ class MapConfigGUI:
         display_x = x + self.image_offset[0]
         display_y = y + self.image_offset[1]
         circle_id = self.canvas.create_oval(display_x-5, display_y-5, display_x+5, display_y+5, fill="green")
-        label_id = self.canvas.create_text(display_x, display_y-10, text=f"ID {camera_id}", fill="#DEDEDE")
+        label_id = self.canvas.create_text(display_x, display_y-10, text=f"ID {camera_id}", fill="red")
+
+        # Draw arrow
+        arrow_length = 30
+        heading = self.current_camera["heading"]
+        rad = math.radians(heading)
+        arrow_end_x = display_x + arrow_length * math.sin(rad)
+        arrow_end_y = display_y - arrow_length * math.cos(rad)
+        arrow_id = self.canvas.create_line(
+            display_x, display_y, arrow_end_x, arrow_end_y,
+            fill="red", arrow=tk.LAST, arrowshape=(8, 10, 3)
+        )
+
         self.camera_circles.append(circle_id)
         self.camera_labels.append(label_id)
+        self.camera_arrows.append(arrow_id)
         messagebox.showinfo("Success", f"Camera ID {camera_id} placed at ({x_rel:.2f}, {y_rel:.2f}, {z})")
         del self.current_camera
 
@@ -544,6 +641,7 @@ class MapConfigGUI:
             self.camera_positions.pop(last_id)
             self.canvas.delete(self.camera_circles.pop())
             self.canvas.delete(self.camera_labels.pop())
+            self.canvas.delete(self.camera_arrows.pop())
             self.instruction_var.set("Select camera ID, enter height and heading, then click to place")
 
     def preview_coordinates(self, event):
@@ -552,7 +650,7 @@ class MapConfigGUI:
 
         within_image = 0 <= x <= self.image_size[0] and 0 <= y <= self.image_size[1]
 
-        if self.mode != "camera" or not self.room_length or len(self.corners) != 4:
+        if self.mode not in ("camera", "rotate_heading") or not self.room_length or len(self.corners) != 4:
             self.coord_var.set("Coordinates: N/A")
         else:
             if within_image:
@@ -572,7 +670,7 @@ class MapConfigGUI:
             if self.mode == "room" and len(self.corners) < 4:
                 corner_names = ["TL point", "TR point", "BR point", "BL point"]
                 hover_text = f"Set {corner_names[len(self.corners)]}"
-            elif self.mode != "camera" or not self.room_length or len(self.corners) != 4:
+            elif self.mode not in ("camera", "rotate_heading") or not self.room_length or len(self.corners) != 4:
                 hover_text = f"Pixel: ({x:.0f}, {y:.0f})"
             else:
                 tl = self.corners[0]

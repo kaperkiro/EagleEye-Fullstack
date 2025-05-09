@@ -45,8 +45,8 @@ Thumbs.db
 Pipfile.lock
 requirements.txt.lock
 
-# Mosquitto config (if you don't want to track it)
-# mosquitto.conf
+# Configuration files
+*.json
 
 # Miscellaneous
 *.swp
