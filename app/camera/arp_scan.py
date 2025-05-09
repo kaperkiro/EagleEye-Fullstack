@@ -2,8 +2,9 @@ import platform
 import netifaces
 import scapy.all as scapy
 from mac_vendor_lookup import MacLookup
-import csv
+import json
 from datetime import datetime
+import os
 
 def get_interface_for_subnet(subnet="192.168.0.0/24"):
     """Find the network interface with an IP in the specified subnet."""
@@ -50,25 +51,32 @@ def arp_scan(ip_range, interface):
         devices.append((ip, mac, manufacturer))
     return devices
 
-def save_results(devices, output_file="axis_cameras.csv"):
-    """Save devices to a CSV file, filtering for Axis Communications, with assigned IDs."""
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+def save_results(devices, output_file="axis_cameras.json"):
+    """Save devices to a JSON file in the script's directory, filtering for Axis Communications, with assigned IDs."""
+    timestamp = datetime.now().strftime("%Y-%m-01 %H:%M:%S")
     axis_devices = [d for d in devices if d[2] == "Axis Communications AB"]
     
     # Assign sequential IDs starting from 1
-    axis_devices_with_id = [(i + 1, ip, mac, manufacturer) for i, (ip, mac, manufacturer) in enumerate(axis_devices)]
+    axis_devices_with_id = [
+        {
+            "ID": i + 1,
+            "Timestamp": timestamp,
+            "IP Address": ip,
+            "MAC Address": mac,
+            "Manufacturer": manufacturer
+        } for i, (ip, mac, manufacturer) in enumerate(axis_devices)
+    ]
     
-    with open(output_file, 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(["ID", "Timestamp", "IP Address", "MAC Address", "Manufacturer"])
-        for id, ip, mac, manufacturer in axis_devices_with_id:
-            writer.writerow([id, timestamp, ip, mac, manufacturer])
+    # Save to JSON in the same directory as the script
+    output_path = os.path.join(os.path.dirname(__file__), output_file)
+    with open(output_path, 'w') as f:
+        json.dump(axis_devices_with_id, f, indent=4)
     
-    return axis_devices_with_id
+    return [(d["ID"], d["IP Address"], d["MAC Address"], d["Manufacturer"]) for d in axis_devices_with_id]
 
-def scan_axis_cameras(ip_range="192.168.0.0/24", output_file="axis_cameras.csv"):
+def scan_axis_cameras(ip_range="192.168.0.0/24", output_file="axis_cameras.json"):
     """
-    Perform an ARP scan to find Axis Communications cameras, assign IDs, and save results.
+    Perform an ARP scan to find Axis Communications cameras, assign IDs, and save results to JSON.
     Returns a list of tuples (ID, IP, MAC, Manufacturer) for Axis devices.
     """
     try:
@@ -98,3 +106,6 @@ def scan_axis_cameras(ip_range="192.168.0.0/24", output_file="axis_cameras.csv")
         print(f"Error: {str(e)}")
         print("Ensure you have NPCAP (Windows) or root privileges (Linux/macOS).")
         return []
+
+if __name__ == "__main__":
+    scan_axis_cameras()

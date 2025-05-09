@@ -40,6 +40,22 @@ class MapConfigGUI:
         # Grid setup
         self.grid_spacing = 50
 
+        # Load camera IDs and IPs from axis_cameras.json
+        self.camera_ids = []
+        self.camera_display_map = {}  # Maps display string to ID
+        try:
+            json_path = os.path.join(os.path.dirname(__file__), "../camera/axis_cameras.json")
+            with open(json_path, 'r') as f:
+                cameras = json.load(f)
+                for camera in cameras:
+                    if "ID" in camera and "IP Address" in camera:
+                        camera_id = str(camera["ID"])
+                        display_str = f"{camera_id} - {camera['IP Address']}"
+                        self.camera_ids.append(display_str)
+                        self.camera_display_map[display_str] = camera_id
+        except (FileNotFoundError, json.JSONDecodeError, KeyError):
+            messagebox.showwarning("Warning", "Could not load camera IDs from axis_cameras.json. Please run ARP scan first.")
+
         # GUI elements
         self.setup_frame = tk.Frame(self.root, bg="#333333")
         self.setup_frame.pack(pady=5)
@@ -114,9 +130,21 @@ class MapConfigGUI:
 
         self.camera_frame = tk.Frame(self.root, bg="#333333")
         self.camera_frame.pack(pady=5)
-        tk.Label(self.camera_frame, text="Camera ID (number):", bg="#333333", fg="#DEDEDE", font=("Arial", 12)).pack(side=tk.LEFT)
-        self.camera_id = tk.Entry(self.camera_frame, width=5, bg="#444444", fg="#DEDEDE", insertbackground="#DEDEDE")
+        tk.Label(self.camera_frame, text="Camera ID:", bg="#333333", fg="#DEDEDE", font=("Arial", 12)).pack(side=tk.LEFT)
+        self.camera_id = ttk.Combobox(self.camera_frame, width=20, values=self.camera_ids, state="readonly")
         self.camera_id.pack(side=tk.LEFT, padx=5)
+        # Style Combobox to match dark theme
+        style = ttk.Style()
+        style.theme_use('clam')
+        style.configure("TCombobox",
+                        fieldbackground="#444444",
+                        background="#444444",
+                        foreground="#DEDEDE",
+                        arrowcolor="#DEDEDE")
+        style.map("TCombobox",
+                  fieldbackground=[('readonly', '#444444')],
+                  selectbackground=[('readonly', '#444444')],
+                  selectforeground=[('readonly', '#DEDEDE')])
         tk.Label(self.camera_frame, text="Height (m):", bg="#333333", fg="#DEDEDE", font=("Arial", 12)).pack(side=tk.LEFT)
         self.camera_height = tk.Entry(self.camera_frame, width=5, bg="#444444", fg="#DEDEDE", insertbackground="#DEDEDE")
         self.camera_height.pack(side=tk.LEFT, padx=5)
@@ -201,7 +229,7 @@ class MapConfigGUI:
         self.origin_lat.insert(0, "59.3240")
         self.origin_lon.delete(0, tk.END)
         self.origin_lon.insert(0, "18.0700")
-        self.camera_id.delete(0, tk.END)
+        self.camera_id.set("")  # Reset Combobox
         self.camera_height.delete(0, tk.END)
         self.camera_heading.delete(0, tk.END)
 
@@ -277,7 +305,6 @@ class MapConfigGUI:
                 messagebox.showerror("Error", "Corners do not form a convex quadrilateral")
                 self.undo_corner()
                 return
-            # Add Origin label for top-left (index 0)
             tl_x, tl_y = self.corners[0]
             display_x = tl_x + self.image_offset[0] - 15
             display_y = tl_y + self.image_offset[1] + 15
@@ -326,7 +353,6 @@ class MapConfigGUI:
             if not (-90 <= self.origin_geo[0] <= 90 and -180 <= self.origin_geo[1] <= 180):
                 raise ValueError("Invalid latitude or longitude")
 
-            # Calculate meters_per_pixel based on selected side
             side_indices = {
                 "top-left_to_top-right": (0, 1),
                 "top-right_to_bottom-right": (1, 2),
@@ -338,14 +364,12 @@ class MapConfigGUI:
             pixel_dist = math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
             self.meters_per_pixel = length / pixel_dist
 
-            # Calculate relative and geocoordinates
             self.room_corners_relative = []
             self.room_corners_geo = [None] * 4
             tl_geo = self.origin_geo
-            self.room_corners_geo[0] = tl_geo  # Top-left
+            self.room_corners_geo[0] = tl_geo
             tl = self.corners[0]
 
-            # Calculate geocoordinates for TR, BR, BL
             for idx in [1, 2, 3]:
                 px, py = self.corners[idx]
                 x_meters = (px - tl[0]) * self.meters_per_pixel
@@ -356,16 +380,14 @@ class MapConfigGUI:
                 self.room_corners_geo[idx] = (geo_point.latitude, geo_point.longitude)
                 self.room_corners_relative.append([x_meters, y_meters, 0])
 
-            # Add TL relative coordinates
             self.room_corners_relative.insert(0, [0, 0, 0])
 
-            # Calculate image corner geocoordinates (TL, TR, BR, BL)
             self.image_corners_geo = []
             image_corners_pixels = [
-                (0, 0),                      # Image TL
-                (self.image_size[0], 0),     # Image TR
-                (self.image_size[0], self.image_size[1]),  # Image BR
-                (0, self.image_size[1])      # Image BL
+                (0, 0),
+                (self.image_size[0], 0),
+                (self.image_size[0], self.image_size[1]),
+                (0, self.image_size[1])
             ]
             for px, py in image_corners_pixels:
                 x_meters = (px - tl[0]) * self.meters_per_pixel
@@ -375,7 +397,6 @@ class MapConfigGUI:
                 geo_point = geodesic(meters=dist).destination(tl_geo, bearing)
                 self.image_corners_geo.append([geo_point.latitude, geo_point.longitude])
 
-            # Calculate side lengths
             self.side_lengths = {
                 "top-left_to_top-right": self.calculate_side_length(0, 1),
                 "top-right_to_bottom-right": self.calculate_side_length(1, 2),
@@ -383,7 +404,6 @@ class MapConfigGUI:
                 "bottom-left_to_top-left": self.calculate_side_length(3, 0)
             }
 
-            # Update canvas with transparent room outline
             adjusted_corners = [(x + self.image_offset[0], y + self.image_offset[1]) for x, y in self.corners]
             self.canvas.create_polygon(
                 [c for corner in adjusted_corners for c in corner],
@@ -400,7 +420,7 @@ class MapConfigGUI:
             self.side_label_map = {}
             self.display_side_lengths(use_pixels=False)
 
-            self.instruction_var.set("Enter camera ID, height, and heading, then click to place")
+            self.instruction_var.set("Select camera ID, enter height and heading, then click to place")
             self.mode = "camera"
         except ValueError as e:
             messagebox.showerror("Error", f"Invalid input: {e}")
@@ -464,10 +484,11 @@ class MapConfigGUI:
             messagebox.showerror("Error", "Please define room first")
             return
         if not self.camera_id.get():
-            messagebox.showerror("Error", "Please enter a camera ID")
+            messagebox.showerror("Error", "Please select a camera ID")
             return
         try:
-            camera_id = int(self.camera_id.get())
+            selected_display = self.camera_id.get()
+            camera_id = int(self.camera_display_map[selected_display])
             if camera_id < 1:
                 raise ValueError("Camera ID must be a positive integer")
             z = float(self.camera_height.get())
@@ -477,7 +498,7 @@ class MapConfigGUI:
             if not 0 <= heading <= 360:
                 raise ValueError("Heading must be 0-360 degrees")
             self.current_camera = {"id": camera_id, "z": z, "heading": heading}
-        except ValueError as e:
+        except (KeyError, ValueError) as e:
             messagebox.showerror("Error", f"Invalid input: {e}")
 
     def place_camera(self, x, y):
@@ -523,7 +544,7 @@ class MapConfigGUI:
             self.camera_positions.pop(last_id)
             self.canvas.delete(self.camera_circles.pop())
             self.canvas.delete(self.camera_labels.pop())
-            self.instruction_var.set("Enter camera ID, height, and heading, then click to place")
+            self.instruction_var.set("Select camera ID, enter height and heading, then click to place")
 
     def preview_coordinates(self, event):
         x = event.x - self.image_offset[0]

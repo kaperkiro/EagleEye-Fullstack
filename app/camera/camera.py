@@ -3,6 +3,7 @@ import os
 import subprocess
 import requests
 from requests.auth import HTTPDigestAuth
+from ax_devil_device_api import Client, DeviceConfig
 
 class Camera:
     """Class to represent a camera and its configuration.
@@ -24,6 +25,10 @@ class Camera:
         self.geocoords = geocoords
         self.username = username
         self.password = password
+        self.config = (
+            DeviceConfig(self.ip, "student", "student_pass", verify_ssl=False)
+        )
+
         self._add_to_config()
         self.configure_mqtt_frame_metadata()
 
@@ -36,43 +41,25 @@ class Camera:
         tilt: float = 0,
         roll: float = 0,
     ) -> None:
-        """Configure the camera settings using HTTP requests."""
-        base_url = f"http://{self.ip}/axis-cgi"
-        headers = {"accept": "application/json"}
-        
-        try:
-            # Set geolocation
-            response = requests.get(
-                f"{base_url}/geolocation/set.cgi?lat={lat}&lng={lon}",
-                auth=HTTPDigestAuth(self.username, self.password),
-                headers=headers,
-                timeout=10
+        """Configure the camera settings using curl commands."""
+        with Client(self.config) as client:
+            client.geocoordinates.set_location(
+                lat,
+                lon,
             )
-            response.raise_for_status()
-            
-            # Set orientation
-            response = requests.get(
-                f"{base_url}/geoorientation/geoorientation.cgi?action=set&inst_height={inst_height}&heading={heading}&tilt={tilt}&roll={roll}",
-                auth=HTTPDigestAuth(self.username, self.password),
-                headers=headers,
-                timeout=10
+            client.geocoordinates.set_orientation(
+                {
+                    "heading": heading,
+                    "tilt": tilt,
+                    "roll": roll,
+                    "installation_height": inst_height,
+                }
             )
-            response.raise_for_status()
-            
-            # Apply settings
-            response = requests.get(
-                f"{base_url}/geoorientation/geoorientation.cgi?action=set&auto_update_once=true",
-                auth=HTTPDigestAuth(self.username, self.password),
-                headers=headers,
-                timeout=10
-            )
-            response.raise_for_status()
-            
+            # client.geocoordinates.apply_settings() # Automatically sets roll so dont use!
+
             self.geocoords = (lat, lon)
             print(f"Camera: ${self.id} configured successfully")
-        
-        except requests.RequestException as e:
-            print(f"Failed to configure camera {self.ip}: {str(e)}")
+
 
     def save_snapshot(self):
         """Save a snapshot from the camera."""

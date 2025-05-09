@@ -54,6 +54,19 @@ class Application:
         except Exception as e:
             logger.error(f"Error loading map config: {str(e)}")
 
+    def update_cameras_configs(self):
+        try:
+            for camera in self.cameras:
+                if str(camera.id) in self.map_config["cameras"]:
+                    cam_settings = self.map_config["cameras"][str(camera.id)]
+                    lat = cam_settings["geocoordinates"][0]
+                    lon = cam_settings["geocoordinates"][1]
+                    height = cam_settings["height"]
+                    heading = cam_settings["heading"]
+                    camera.configure_camera(lat, lon, height, heading)
+        except Exception as e:
+            logger.error(f"Error updating camera configurations: {str(e)}")
+
     def run(self):
         try:
             # Clear all streams from config.json
@@ -72,6 +85,9 @@ class Application:
             self.load_map_config()            
                 
             map_hol = MapManager()
+
+            logger.info("Updating camera configurations")
+            self.update_cameras_configs()
 
             logger.info("Starting RTSP to WebRTC server")
             threading.Thread(target=start_rtsp_to_webrtc, daemon=True).start()
