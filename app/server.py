@@ -18,6 +18,9 @@ logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
 CORS(app)
 
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)  # Suppress Flask's default logging
+
 ALARM_FILE = "data/alarms.json"
 MAP_PATH = "map.jpg"
 

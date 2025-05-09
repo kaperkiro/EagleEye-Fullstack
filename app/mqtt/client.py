@@ -48,7 +48,7 @@ class MqttClient:
             payload = json.loads(msg.payload.decode())
             observations = payload.get("frame", {}).get("observations", [])
             camera_id = msg.topic.split("/")[0] # Extract camera ID from topic ("cam_id"/frame_metadata)
-            print(f"Received observations on cam {camera_id}: {observations}\n")
+            # print(f"Received observations on cam {camera_id}: {observations}\n")
 
             # Update global object tracking
             self.object_manager.add_observations(camera_id, observations)

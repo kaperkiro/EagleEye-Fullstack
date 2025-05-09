@@ -19,7 +19,7 @@ class MapManager:
         """
         self.map_config = json.load(open(os.path.join(os.path.dirname(__file__), "map_config.json"), "r"))
         self.name = self.map_config["name"]
-        self.corner_coords = [(lat, lon) for lat, lon in self.map_config["corners"]] # [(lat, lon), ...] in order TL, BL, TR, BR
+        self.corner_coords = [(lat, lon) for lat, lon in self.map_config["corners"]] # [(lat, lon), ...] in order TL, TR, BR, BL
         self.file_path = self._get_floor_plan()  # Get the floor plan image file path
         self.camera_geocoords = {}
         self.camera_relative_coords = {}
@@ -43,30 +43,26 @@ class MapManager:
 
     def convert_to_relative(self, coords: tuple) -> tuple:
         map_corners = self.map_config["image_corners"]
-        tl, bl, tr, br = map_corners
+        tl, tr, br, bl = map_corners
         lat0, lon0 = tl
         lat1, lon1 = tr
-        lat2, lon2 = bl
-        lat3, lon3 = br
+        lat2, lon2 = br
+        lat3, lon3 = bl
 
         lat, lon = coords
 
         # difference in lat/lon from the top-left corner
-        dlat = lat - lat0
+        dlat = lat0 - lat
         dlon = lon - lon0
 
         # calculate the width and height of the map in degrees
         width = math.sqrt((lat1 - lat0) ** 2 + (lon1 - lon0) ** 2)
-        height = math.sqrt((lat2 - lat0) ** 2 + (lon2 - lon0) ** 2)
+        height = math.sqrt((lat3 - lat0) ** 2 + (lon3 - lon0) ** 2)
 
         # calculate the relative coordinates in percentage
         u = (dlon / width) * 100
         v = (dlat / height) * 100
         return (u, v)
-
-    def return_map(self):
-        """Return the map object."""
-        return self
 
     def __str__(self):
         return f"Map(name={self.name}, corner_coords={self.corner_coords}, file_path={self.file_path})"
