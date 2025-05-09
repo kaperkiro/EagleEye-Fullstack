@@ -42,44 +42,26 @@ class MapManager:
         raise FileNotFoundError(f"Floor plan not found in {assets_dir}. Please add a floor_plan.png or floor_plan.jpg.")
 
     def convert_to_relative(self, coords: tuple) -> tuple:
-        """Convert absolute geocoordinates to relative coordinates on the map.
+        map_corners = self.map_config["image_corners"]
+        tl, bl, tr, br = map_corners
+        lat0, lon0 = tl
+        lat1, lon1 = tr
+        lat2, lon2 = bl
+        lat3, lon3 = br
 
-        Args:
-            coords (tuple): geocoordinates (lat, lon) of the point
+        lat, lon = coords
 
-        Returns:
-            tuple: (u, v) relative coordinates in [0..100] for x and y,
-                where (0,0)=TL, (100,100)=BR
-        """
-        tr, br, bl, tl = self.corner_coords
-        lat0, lon0 = tl  # origin at top-left
+        # difference in lat/lon from the top-left corner
+        dlat = lat - lat0
+        dlon = lon - lon0
 
-        M_PER_DEG_LAT = 110_574  # approx meters per degree latitude
-        M_PER_DEG_LON = 111_320 * math.cos(math.radians(lat0))  # adjust by cos(lat)
+        # calculate the width and height of the map in degrees
+        width = math.sqrt((lat1 - lat0) ** 2 + (lon1 - lon0) ** 2)
+        height = math.sqrt((lat2 - lat0) ** 2 + (lon2 - lon0) ** 2)
 
-        def to_xy(lat, lon):
-            """Project lat/lon to local x,y in meters."""
-            dx = (lon - lon0) * M_PER_DEG_LON
-            dy = (lat - lat0) * M_PER_DEG_LAT
-            return np.array([dx, dy])
-
-        vec_p = to_xy(*coords)
-        vec_tr = to_xy(*tr)
-        vec_bl = to_xy(*bl)
-
-        basis = np.column_stack([vec_tr, vec_bl])
-
-        if np.abs(np.linalg.det(basis)) < 1e-8:
-            raise ValueError(
-                "Invalid corner coordinates: area too small or corners are collinear."
-            )
-
-        # Solve for the relative coordinates in the new basis
-        uv = np.linalg.solve(basis, vec_p)
-
-        # Scale to [0, 100] and round
-        u, v = np.round(uv * 100, 2)
-
+        # calculate the relative coordinates in percentage
+        u = (dlon / width) * 100
+        v = (dlat / height) * 100
         return (u, v)
 
     def return_map(self):

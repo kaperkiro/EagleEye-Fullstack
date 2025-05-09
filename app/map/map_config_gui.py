@@ -22,6 +22,7 @@ class MapConfigGUI:
         self.meters_per_pixel = None
         self.room_corners_relative = []
         self.room_corners_geo = []
+        self.image_corners_geo = []  # Geocoordinates of image corners (TL, BL, TR, BR)
         self.origin_geo = None
         self.side_lengths = {}
         self.side_label_ids = []  # Store canvas IDs for side length labels
@@ -190,6 +191,7 @@ class MapConfigGUI:
         self.meters_per_pixel = None
         self.room_corners_relative = []
         self.room_corners_geo = []
+        self.image_corners_geo = []
         self.origin_geo = None
         self.side_lengths = {}
         self.side_label_ids = []
@@ -384,6 +386,21 @@ class MapConfigGUI:
                 temp_point = geodesic(meters=y).destination(bl_geo, bearing=0) if y >= 0 else geodesic(meters=-y).destination(bl_geo, bearing=180)
                 final_point = geodesic(meters=x).destination(temp_point, bearing=90) if x >= 0 else geodesic(meters=-x).destination(temp_point, bearing=270)
                 self.room_corners_geo[idx] = (final_point.latitude, final_point.longitude)
+
+            # Calculate image corner geocoordinates (TL, BL, TR, BR)
+            self.image_corners_geo = []
+            image_corners_pixels = [
+                (0, 0),                      # Image TL
+                (0, self.image_size[1]),     # Image BL
+                (self.image_size[0], 0),     # Image TR
+                (self.image_size[0], self.image_size[1])  # Image BR
+            ]
+            for px, py in image_corners_pixels:
+                x_meters = (px - bl[0]) * self.meters_per_pixel
+                y_meters = (py - bl[1]) * self.meters_per_pixel
+                temp_point = geodesic(meters=y_meters).destination(bl_geo, bearing=0) if y_meters >= 0 else geodesic(meters=-y_meters).destination(bl_geo, bearing=180)
+                final_point = geodesic(meters=x_meters).destination(temp_point, bearing=90) if x_meters >= 0 else geodesic(meters=-x_meters).destination(temp_point, bearing=270)
+                self.image_corners_geo.append([final_point.latitude, final_point.longitude])
 
             # Validate geocoordinate distance
             bl_geo = self.room_corners_geo[1]
@@ -643,6 +660,7 @@ class MapConfigGUI:
         config = {
             "name": self.map_name.get(),
             "corners": self.room_corners_geo,
+            "image_corners": self.image_corners_geo,
             "room": {
                 "length": self.room_length,
                 "side_lengths": self.side_lengths
