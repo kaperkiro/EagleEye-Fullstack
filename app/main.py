@@ -25,6 +25,7 @@ class Application:
         self.running = True
         self.cameras = []
         self.map_config = os.path.join(os.path.dirname(os.path.abspath(__file__)), "map", "map_config.json")
+        self.map_manager = None
 
     def find_cameras(self):
         try:
@@ -67,9 +68,25 @@ class Application:
         except Exception as e:
             logger.error(f"Error updating camera configurations: {str(e)}")
 
+    def init_map_manager(self):
+        try:
+            if self.map_manager is None:
+                self.map_manager = MapManager()
+                logger.info("Map manager initialized")
+            else:
+                logger.info("Map manager already initialized")
+        except Exception as e:
+            logger.error(f"Error initializing map manager: {str(e)}")
+
+    def stop_application(self):
+        self.running = False
+        self.mqtt_client.stop()
+        self.broker.stop()
+        logger.info("Application stopped")
+
     def run(self):
         try:
-            # Clear all streams from config.json
+            logger.info("Clearing RTSP to WebRTC config")
             clear_streams()
 
             logger.info("Scanning for cameras")
@@ -84,7 +101,8 @@ class Application:
             logger.info("Checking for map config")
             self.load_map_config()            
                 
-            map_hol = MapManager()
+            logger.info("Initializing map manager")
+            self.init_map_manager()
 
             logger.info("Updating camera configurations")
             self.update_cameras_configs()
@@ -93,9 +111,7 @@ class Application:
             threading.Thread(target=start_rtsp_to_webrtc, daemon=True).start()
 
             logger.info("Starting Flask server")
-            threading.Thread(
-                target=run_flask_server, args=(self.mqtt_client, map_hol), daemon=True
-            ).start()
+            threading.Thread(target=run_flask_server, args=(self.mqtt_client, self.map_manager), daemon=True).start()
 
             while self.running:
                 time.sleep(1)
@@ -103,10 +119,8 @@ class Application:
         except Exception as e:
             logger.error(f"Application error: {str(e)}")
         finally:
-            self.running = False
-            self.mqtt_client.stop()
-            self.broker.stop()
-            logger.info("Application shutdown complete")
+            logger.info("Stopping application")
+            self.stop_application()
 
 def main():
     app = Application()
