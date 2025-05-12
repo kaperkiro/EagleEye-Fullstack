@@ -49,7 +49,7 @@ class ObjectManager:
         """
 
         def append_json_line(entry: dict):
-            with open("heatmap_data.jl", "a") as f:
+            with open("app/heatmap/heatmap_data.jl", "a") as f:
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
         if obj:

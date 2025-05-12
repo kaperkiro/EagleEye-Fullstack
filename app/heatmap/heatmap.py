@@ -1,8 +1,8 @@
 import json
 from datetime import datetime, timedelta, timezone
+import os
 
-
-def create_heatmap(timeframe_min, mapmanager, filename="heatmap_data.jl"):
+def create_heatmap(timeframe_min, mapmanager, filename=os.path.join("app/heatmap/heatmap_data.jl")):
     """
     timeframe_min: int, window in minutes (e.g. 60 for the last hour)
     mapmanager:  has convert_to_relative((lat,lon)) -> (u%, v%)

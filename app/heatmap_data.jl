@@ -1,1 +1,0 @@
-[{"bounding_box": {"bottom": 0.6, "left": 0.45, "right": 0.55, "top": 0.4}, "class": {"lower_clothing_colors": [{"name": "Blue", "score": 0.8}], "score": 0.95, "type": "Human", "upper_clothing_colors": [{"name": "White", "score": 0.75}]}, "geoposition": {"latitude": 59.32470000000001, "longitude": 18.07065}, "timestamp": "2025-04-29T23:07:14Z", "track_id": "person1"}]
