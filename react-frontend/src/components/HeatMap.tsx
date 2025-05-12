@@ -100,7 +100,7 @@ export const HeatMapData: React.FC = () => {
   const handleButtonClick = (index: number) => {
     setActiveIndex(index);
     //[60, 360, 720, 1080, 1440];
-    const timeframeMap = [1, 3, 5, 10, 20];
+    const timeframeMap = [1, 3, 5, 10, 1440];
     const minutes = timeframeMap[index];
 
     fetch(`http://localhost:5001/api/heatmap/${minutes}`, {

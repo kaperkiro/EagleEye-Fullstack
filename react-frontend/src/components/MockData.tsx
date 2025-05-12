@@ -2,9 +2,9 @@ import React, { useRef, useEffect } from "react";
 
 export const mock_obj_data = {
   objects: [
-    { id: 1, x: 20, y: 45, cId: 5 },
-    { id: 2, x: 78, y: 30, cId: 5 },
-    { id: 3, x: 50, y: 75, cId: 5 },
+    { id: 1, x: 20, y: 45, cId: [1] },
+    { id: 2, x: 78, y: 30, cId: [1, 1] },
+    { id: 3, x: 50, y: 75, cId: [1] },
   ],
 };
 

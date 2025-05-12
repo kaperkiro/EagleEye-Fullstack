@@ -5,7 +5,7 @@
 }
 
 .mapDiv {
-  flex: 1; /* take up all remaining space */
+  width: 75%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -47,10 +47,8 @@
 }
 .floorpPlanDiv {
   position: relative;
-  width: 75vw; /* Fixed width relative to viewport height */
-  height: 85vh; /* Fixed height relative to viewport height */
-  overflow: hidden;
-  margin: 0 auto; /* Center the container if desired */
+  width: 100%;
+  height: 100%;
 }
 
 .floorpPlanDiv img {

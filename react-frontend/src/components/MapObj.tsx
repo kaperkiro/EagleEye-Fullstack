@@ -33,26 +33,15 @@ interface MapObject {
   id: number; // Använder numeriskt ID internt, från track_id
   x: number; // Position i procent (0-100)
   y: number; // Position i procent (0-100)
+  cId: number[];
   // Lägg till andra fält från BackendDetection om de behövs för rendering
 }
 
-export async function getStreamUrls(id: number): Promise<string[]> {
-  let urls: string[] = [];
-  // Later, replace this with an API call to retrieve URLs for the given button.
-  if (id === 1) {
-    urls = [`rtsp://camera/${id}/1`];
-  }
-  if (id === 2) {
-    urls = [`rtsp://camera/${id}/1`, `rtsp://camera/${id}/2`];
-  }
-  if (id === 3) {
-    urls = [
-      `rtsp://camera/${id}/1`,
-      `rtsp://camera/${id}/2`,
-      `rtsp://camera/${id}/3`,
-    ];
-  }
-  return urls;
+export async function getStreamUrls(objectId: number): Promise<string[]> {
+  const obj = mock_obj_data.objects.find((o) => o.id === objectId);
+  if (!obj) return [];
+  // Convert each camera ID to string for the streamId prop
+  return obj.cId.map((id) => id.toString());
 }
 
 async function getCameras() {
@@ -108,9 +97,9 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
             id: pos.camera_id,
             x: pos.x,
             y: pos.y,
+            cId: [],
           }))
         : [];
-      console.log("mappedObjects!!!!!:", mappedObjects);
       setObjects(mappedObjects);
     } catch (err) {
       console.error("Failed to fetch position data:", err);

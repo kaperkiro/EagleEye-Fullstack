@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import "../css/VideoWindow.css";
 
-const WebRTCStream: React.FC = () => {
+interface WebRTCStreamProps {
+  streamId: string;
+}
+
+const WebRTCStream: React.FC<WebRTCStreamProps> = ({ streamId }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -9,7 +13,6 @@ const WebRTCStream: React.FC = () => {
   const [active, setActive] = useState(false);
 
   useEffect(() => {
-    const streamId = "1";
     const baseUrl = "http://localhost:8083/stream";
 
     const pc = new RTCPeerConnection({
@@ -105,31 +108,30 @@ const WebRTCStream: React.FC = () => {
         pcRef.current.close();
       }
     };
-  }, []);
+  }, [streamId]);
 
-  // Toggle fullscreen and update the active state
+  // Toggle fullscreen and update active state
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
       containerRef.current
         ?.requestFullscreen()
         .then(() => setActive(true))
-        .catch((err) => console.error("Error enabling fullscreen mode:", err));
+        .catch((err) => console.error("Error enabling fullscreen:", err));
     } else {
       document
         .exitFullscreen()
         .then(() => setActive(false))
-        .catch((err) => console.error("Error exiting fullscreen mode:", err));
+        .catch((err) => console.error("Error exiting fullscreen:", err));
     }
   };
 
-  // Listen for fullscreen changes to update active state (e.g., when user presses Escape)
+  // Keep `active` in sync if user presses Escape, etc.
   useEffect(() => {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
         setActive(false);
       }
     };
-
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () =>
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
