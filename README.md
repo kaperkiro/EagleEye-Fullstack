@@ -1,97 +1,142 @@
-# Axis Camera UI Application
+# EagleEye Surveillance System
 
-A Python-based user interface (UI) application designed for Axis IP cameras, developed by **LiU TDDD96 Group 9** at Linköping University for the TDDD96 course. It integrates RTSP video streams, MQTT for real-time object detection data, and SQLite for persistent storage. The system automatically discovers Axis cameras on a network, aims to provide a UI for viewing live feeds with bounding boxes around detected objects, and saves frames with metadata to a database. **Note**: The UI component is still under development.
+## Overview
 
-## Features
-- **Camera Discovery**: Uses `ping` to detect devices, followed by RTSP checks to identify Axis cameras.
-- **Live Streaming**: Displays RTSP feeds with real-time object detection overlays via OpenCV (UI in progress).
-- **MQTT Integration**: Receives object detection data (e.g., humans, vehicles) from Axis cameras via MQTT.
-- **Database Storage**: Saves video frames and detection metadata to a SQLite database.
-- **Modular Design**: Organized into separate classes for broker management, database, MQTT client, RTSP streaming, and camera discovery.
+EagleEye is a real-time surveillance and monitoring system designed to detect, track, and visualize human activity within a defined area using Axis cameras. The system processes video feeds, performs object detection (humans and faces), tracks objects across multiple cameras, generates heatmaps of activity, and triggers alarms for restricted area violations. It leverages MQTT for communication, a graphical interface for map configuration, and a modular architecture for scalability.
 
-## Prerequisites
-- **Python**: 3.12 or higher
-- **Dependencies**:
-  - `opencv-python` (with FFmpeg support)
-  - `paho-mqtt`
-  - `numpy`
-- **Mosquitto**: MQTT broker (installed and configured)
-- **Network Access**: Axis cameras must be on the same network (e.g., `192.168.0.x` subnet).
-
-## Installation
-1. **Clone the Repository**:
-   Clone the repository with `git clone <repository-url>` and navigate to the directory with `cd code`.
-
-2. **Set Up a Virtual Environment** (optional but recommended):
-   Create a virtual environment with `python -m venv venv` and activate it with `source venv/bin/activate` (on Windows: `venv\Scripts\activate`).
-
-3. **Install Dependencies**:
-   Install required packages with `pip install opencv-python paho-mqtt numpy`.
-
-4. **Install Mosquitto**:
-   - On Windows: Download from [Mosquitto website](https://mosquitto.org/download/) and install.
-   - On Linux: Install with `sudo apt-get install mosquitto mosquitto-clients`.
-   - Ensure a `mosquitto.conf` file exists in the project root or update `BrokerConfig` in `broker_manager.py` with the correct path.
-
-5. **Verify FFmpeg**:
-   - Ensure OpenCV is built with FFmpeg support by running this Python code: `import cv2; print(cv2.getBuildInformation())`. Look for `FFmpeg: YES`. If not, reinstall with `pip install opencv-python-headless[ffmpeg]`.
+Key features include:
+- **Object Detection and Tracking**: Detects humans and faces in camera feeds, tracks them across multiple cameras using geoposition data.
+- **Heatmap Generation**: Visualizes activity density on a 20×20 grid overlaid on a floor plan.
+- **Alarm System**: Triggers alerts when objects enter predefined restricted areas.
+- **Map Configuration**: Provides a GUI to configure the floor plan and camera positions.
+- **MQTT Communication**: Publishes and subscribes to observation data for real-time processing.
+- **Simulated Data**: Supports dummy data generation for testing and development.
 
 ## Project Structure
-- `code/`
-  - `broker_manager.py` # Manages Mosquitto MQTT broker
-  - `camera_discovery.py` # Discovers Axis cameras using ping and RTSP
-  - `config.py` # RTSP configuration for Axis cameras
-  - `database.py` # SQLite database management
-  - `mqtt_client.py` # MQTT client for detection data
-  - `rtsp_stream.py` # RTSP stream handling and display
-  - `main.py` # Main application entry point
-  - `.gitignore` # Git ignore file
-  - `README.md` # This file
-  - `LICENSE` # MIT License file
 
-## Configuration
-- **Camera Settings**: Update `RtspConfig` in `config.py` with your Axis camera’s username, password, and stream path if different from defaults (`student:student_pass`, `axis-media/media.amp`).
-- **IP Range**: Adjust `base_ip`, `start_range`, and `end_range` in `CameraDiscovery` (`camera_discovery.py`) to match your network (default: `192.168.0.90-100`).
-- **Database**: The SQLite database (`surveillance.db`) is created automatically with the schema for Axis camera data.
+The project is organized into several directories, each handling specific functionality:
 
-## Usage
-1. **Run the Application**:
-   Start the application with `python main.py`.
+```
+root/
+├── app/
+│   ├── alarms/              # Alarm management for restricted areas
+│   │   ├── alarm.py
+│   │   └── alarms.json
+│   ├── camera/              # Camera configuration and video processing
+│   │   ├── axis_cameras.json
+│   │   ├── calibration.py
+│   │   ├── camera.py
+│   │   └── webrtc.py
+│   ├── heatmap/             # Heatmap generation
+│   │   ├── heatmap.py
+│   │   └── heatmap_data.jl
+│   ├── helper/              # Utility functions
+│   │   └── helper.py
+│   ├── map/                 # Map and geoposition management
+│   │   ├── manager.py
+│   │   ├── map_config.json
+│   │   └── map_config_gui.py
+│   ├── mqtt/                # MQTT communication
+│   │   ├── broker.py
+│   │   ├── client.py
+│   │   └── publisher.py
+│   ├── objects/             # Global object tracking
+│   │   └── manager.py
+│   └── assets/              # Static assets (e.g., floor plan image)
+│       ├── floor_plan.png
+│       └── floor_plan.jpg
+├── external/
+│   └── mosquitto.conf       # Mosquitto MQTT broker configuration
+```
 
-2. **What Happens**:
-   - Starts the Mosquitto broker if not running.
-   - Connects to MQTT for detection data from Axis cameras.
-   - Loads existing cameras from the database (initially `192.168.0.93`).
-   - Begins discovery to find new Axis cameras.
-   - Opens windows showing live feeds with bounding boxes (UI development pending; currently uses OpenCV windows).
+## Architecture
 
-3. **Exit**:
-   - Press `q` in any camera window to close it (main app continues until interrupted).
-   - Use `Ctrl+C` in the terminal to shut down completely.
+EagleEye operates as a modular system with the following components:
 
-## Database Schema
-The system uses SQLite to store:
-- `Camera`: Camera details (ID, NAME, LOCATION, IP, RTSPURL)
-- `Videoframe`: Saved frames (TIMESTAMP, TIMETOLIVE, FILEPATH, CAMERAID)
-- `DetectedObject`: Objects in frames (GEOPOSITION, IMAGEVELOCITY, bounding box coordinates)
-- Specialized tables: `Human`, `Vehicle`, etc., for object-specific data from Axis camera analytics.
+1. **Camera Module (`app/camera/`)**:
+   - Configures Axis cameras (`axis_cameras.json`) and processes video feeds (`camera.py`, `webrtc.py`).
+   - Uses calibration data (`calibration.py`) to map camera coordinates to geopositions.
+   - Outputs observations (humans/faces with bounding boxes, geopositions, timestamps).
 
-## Troubleshooting
-- **No Video Display**:
-  - Check logs for H.264 errors (`Missing reference picture`, `decode_slice_header error`).
-  - Test RTSP stream with `ffplay rtsp://student:student_pass@192.168.0.93:554/axis-media/media.amp`.
-  - Ensure FFmpeg is enabled in OpenCV.
+2. **MQTT Communication (`app/mqtt/`)**:
+   - **Broker (`broker.py`)**: Manages the Mosquitto MQTT broker for message passing.
+   - **Publisher (`publisher.py`)**: Simulates human movement by publishing dummy observations to MQTT topics (`{camera_id}/frame_metadata`).
+   - **Client (`client.py`)**: Subscribes to MQTT topics, receives observations, and forwards them to the object manager.
 
-- **Slow Discovery**:
-  - Verify ICMP (`ping`) isn’t blocked by your network; adjust `CameraDiscovery` to use TCP if needed.
+3. **Object Tracking (`app/objects/`)**:
+   - `manager.py`: Tracks objects globally across cameras using `GlobalObject` and `ObjectManager` classes.
+   - Matches observations based on geoposition proximity and clothing colors (`helper.py`).
+   - Archives objects no longer in view and saves observations to `heatmap_data.jl`.
 
-- **MQTT Issues**:
-  - Confirm Mosquitto is running and the Axis camera publishes to `axis/frame_metadata`.
+4. **Map Management (`app/map/`)**:
+   - `manager.py`: Converts geocoordinates to relative coordinates (u%, v%) for mapping onto a floor plan.
+   - `map_config_gui.py`: Provides a Tkinter-based GUI to configure the floor plan, room corners, and camera positions.
+   - `map_config.json`: Stores map metadata, including corner geocoordinates and camera positions.
 
-## Current Limitations
-- **UI Incomplete**: The graphical user interface is not yet implemented; currently uses OpenCV windows for display.
-- **H.264 Decoding**: Occasional issues with decoding Axis camera streams (work in progress).
-- **Single-threaded Streams**: May limit performance with multiple cameras (threading enhancements planned).
+5. **Heatmap Generation (`app/heatmap/`)**:
+   - `heatmap.py`: Generates a 20×20 grid heatmap from observations in `heatmap_data.jl`, normalized by the busiest cell.
+   - Outputs data in the format `{ "last_{timeframe_min}_min": [{ "x": float, "y": float, "intensity": float }, ...] }`.
+
+6. **Alarm System (`app/alarms/`)**:
+   - `alarm.py`: Checks if objects enter restricted areas defined in `alarms.json`.
+   - Triggers alerts based on relative coordinates from the map manager.
+
+7. **Utilities (`app/helper/`)**:
+   - `helper.py`: Contains `check_if_same_observation` to compare observations based on geoposition (within 1.5m) and clothing colors.
+
+## Prerequisites
+
+- **Python 3.8+**
+- **Mosquitto MQTT Broker**: Install Mosquitto for MQTT communication.
+- **Axis Cameras**: Configured with accessible IP addresses (or use dummy data for testing).
+- **Dependencies**:
+  See requirements.txt
+
+## Installation
+
+1. **Clone the Repository**:
+   ```bash
+   git clone https://gitlab.liu.se/tddd96-pum09/Backend-Code.git
+   cd Backend-Code
+   ```
+
+2. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Install Mosquitto**:
+   - On Ubuntu:
+     ```bash
+     sudo apt-get install mosquitto mosquitto-clients
+     ```
+   - On macOS:
+     ```bash
+     brew install mosquitto
+     ```
+   - Ensure the `mosquitto.conf` file is placed in the `external/` directory and that mosquitto is properly configured on your computer by entering the following in your terminal:
+     ```bash
+     mosquitto -h
+     ```
+   - If mosquitto is not recognized you might have to correctly set your system variables.
+     
+4. **Run main.py**:
+   - Run the program with the following command.
+     ```bash
+     python3 app/main.py
+     ```
+
+## Notes
+
+- **Performance**: The system assumes a small number of cameras. For large setups, optimize MQTT message handling and object tracking.
+- **Security**: Secure the MQTT broker with authentication in production environments.
+- **Frontend**: To be implemented in the same git repository.
+
 
 ## License
-This project is licensed under the MIT License by **LiU TDDD96 Group 9**. See the [`LICENSE`](LICENSE) file for details.
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+## Contact
+
+For questions or support, contact the project maintainers at pumgrupp9-users@liuonline.onmicrosoft.com.
