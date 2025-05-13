@@ -1,6 +1,8 @@
 import subprocess
 import os
+import logging
 
+logger = logging.getLogger(__name__)
 
 def start_rtsp_to_webrtc():
     # Locate the project root directory (three levels up) and external folder
@@ -16,6 +18,7 @@ def start_rtsp_to_webrtc():
 
     try:
         # Start the server as a subprocess
+        logger.info("Starting RTSPtoWebRTC server...")
         process = subprocess.Popen(
             command,
             cwd=rtsp_dir,
@@ -23,23 +26,28 @@ def start_rtsp_to_webrtc():
             stderr=subprocess.PIPE,
             text=True,
         )
-        print("RTSPtoWebRTC server starting...")
+        logger.info("RTSPtoWebRTC server started successfully. Preview URL: http://localhost:8083")
 
         for line in process.stdout:  # Read output line by line
             print(line.strip())
 
         # Check for errors
-        # process.wait()  # Wait for the process to complete (optional, remove if you want it to run in background)
-        if process.returncode != 0:
+        process.wait()  # Wait for the process to complete (optional, remove if you want it to run in background)
+        if process.returncode not in (0, 1):
             error_output = process.stderr.read()
-            raise RuntimeError(f"Failed to start RTSPtoWebRTC: {error_output}")
+            logger.error(f"RTSPtoWebRTC server exited with error: {error_output.strip()}") 
 
     except subprocess.CalledProcessError as e:
-        print(f"Error: {e}")
+        logger.error(f"Error starting RTSPtoWebRTC: {e}")
     except FileNotFoundError:
-        print(
-            "Error: 'go' command not found. Please ensure Go is installed and in your PATH."
-        )
+        logger.error("RTSPtoWebRTC executable not found. Ensure Go is installed and the path is correct.")
+    except Exception as e:
+        logger.error(f"An unexpected error occurred: {e}")
+    except KeyboardInterrupt:
+        logger.info("Keyboard interrupt received, stopping RTSPtoWebRTC server.")
+    finally:
+        if process:
+            process.terminate()
 
 
 if __name__ == "__main__":

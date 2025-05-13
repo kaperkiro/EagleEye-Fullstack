@@ -1,6 +1,8 @@
 import socket
 import subprocess
+import logging
 
+logger = logging.getLogger(__name__)
 
 class BrokerManager:
     def __init__(
@@ -9,7 +11,11 @@ class BrokerManager:
         self.host = host
         self.port = port
         self.config_file = config_file
+        self.process = None
         self.start()
+
+    def __del__(self):
+        self.stop()
 
     def is_running(self) -> bool:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -22,18 +28,15 @@ class BrokerManager:
             
     def stop(self) -> None:
         if self.is_running():
-            print("Stopping Mosquitto broker...")
-            subprocess.run(
-                "pkill -f mosquitto", shell=True, check=True
-            )
-        else:
-            print("Mosquitto is not running.")
+            logger.info("Stopping Mosquitto broker...")
+            self.process.kill()
 
     def start(self) -> None:
         if self.is_running():
-            print("Mosquitto is already running.")
+            logger.info("Mosquitto broker is already running.")
+            return
         else:
-            subprocess.Popen(
-                f"mosquitto -c {self.config_file}", shell=True
-            )  # add -v flag to enable verbose logging
+            logger.info("Starting Mosquitto broker...")
+            self.process = subprocess.Popen(f"mosquitto -c {self.config_file}", shell=True)  
+            # add -v flag to enable verbose logging
             # mosquitto -c {self.config.config_file} -v

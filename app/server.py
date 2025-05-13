@@ -3,21 +3,30 @@ from flask_cors import CORS
 from app.heatmap.heatmap import create_heatmap
 import os
 import uuid
-import json
 import logging
-import threading
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Server:
     def __init__(self, mqtt_client, map_manager, alarm_manager):
         self.mqtt_client = mqtt_client
         self.map_manager = map_manager
         self.alarm_manager = alarm_manager
+
         
         self.app = Flask(__name__)
+        logging.info(f"Starting Flask server...")
         CORS(self.app)
         self.ALARM_FILE = os.path.join("app", "alarms", "alarms.json")
         self.setup_routes()
         self.run()
+
+    # close server when keyboard interrupt
+    def __del__(self):
+        logging.info("Stopping Flask server...")
+        self.app.shutdown()
+        logging.info("Flask server stopped.")
 
     def setup_routes(self):
         app = self.app

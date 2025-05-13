@@ -5,6 +5,10 @@ from mac_vendor_lookup import MacLookup
 import json
 from datetime import datetime
 import os
+from app.camera.camera import Camera
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_interface_for_subnet(subnet="192.168.0.0/24"):
     """Find the network interface with an IP in the specified subnet."""
@@ -82,23 +86,21 @@ def scan_axis_cameras(ip_range="192.168.0.0/24", output_file="axis_cameras.json"
     try:
         # Get the interface dynamically
         interface = get_interface_for_subnet(ip_range)
-        print(f"Using interface: {interface}")
         
         # Perform ARP scan
-        print(f"Scanning {ip_range}...")
+        logger.info(f"Scanning {ip_range} using interface {interface}...")
         devices = arp_scan(ip_range, interface)
         
         # Save and return Axis devices with IDs
         axis_devices = save_results(devices, output_file)
-        print(f"Found {len(axis_devices)} Axis Communications cameras. Results saved to {output_file}")
         
         if axis_devices:
-            print("ID\tIP Address\tMAC Address\t\tManufacturer")
+            logger.info(f"Found {len(axis_devices)} Axis cameras.")
+            logger.info("ID\tIP Address\tMAC Address\t\tManufacturer")
             for id, ip, mac, manufacturer in axis_devices:
-                print(f"{id}\t{ip}\t{mac}\t{manufacturer}")
-            print("\n")
+                logger.info(f"{id}\t{ip}\t{mac}\t{manufacturer}")
         else:
-            print("No Axis Communications cameras found.")
+            logger.info("No Axis cameras found.")
         
         return axis_devices
     
@@ -106,6 +108,20 @@ def scan_axis_cameras(ip_range="192.168.0.0/24", output_file="axis_cameras.json"
         print(f"Error: {str(e)}")
         print("Ensure you have NPCAP (Windows) or root privileges (Linux/macOS).")
         return []
+    
+def find_cameras():
+    cameras = []
+    try:
+        scan_results = scan_axis_cameras()
+        if scan_results:
+            for id, ip, mac, manufacturer in scan_results:
+                cameras.append(Camera(ip=ip, id=id))
+            return cameras
+        else:
+            logger.info("No Axis cameras found on 192.168.0.0/24 subnet")
+            return []
+    except Exception as e:
+        logger.error(f"Error during camera discovery: {str(e)}")
 
 if __name__ == "__main__":
     scan_axis_cameras()

@@ -4,6 +4,9 @@ import subprocess
 import requests
 from requests.auth import HTTPDigestAuth
 from ax_devil_device_api import Client, DeviceConfig
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Camera:
     """Class to represent a camera and its configuration.
@@ -77,9 +80,9 @@ class Camera:
             response.raise_for_status()
             with open(f"{self.id}_snapshot.jpg", "wb") as f:
                 f.write(response.content)
-            print(f"Snapshot saved as {self.id}_snapshot.jpg")
+            logger.info(f"Snapshot saved as {self.id}_snapshot.jpg")
         except requests.RequestException as e:
-            print(f"Failed to save snapshot for {self.ip}: {str(e)}")
+            logger.error(f"Failed to save snapshot for {self.ip}: {str(e)}")
 
     def _add_to_config(self) -> None:
         """Add the camera dynamically to the config file."""
@@ -90,7 +93,7 @@ class Camera:
 
             streams = config.get("streams", {})
             if self.id not in streams:
-                print("Adding camera to config file")
+                logger.info(f"Adding camera {self.id} to config file")
                 streams[self.id] = {
                     "on_demand": False,
                     "disable_audio": True,
@@ -100,7 +103,7 @@ class Camera:
                 with open(config_file, "w") as f:
                     json.dump(config, f, indent=4)
         else:
-            print("Config file not found")
+            logger.error("Config file not found")
             return
 
     @DeprecationWarning
@@ -113,10 +116,10 @@ class Camera:
             text=True,
         )
         if result.returncode == 0:
-            print("Curl command executed successfully")
+            logger.info("Geocoordinates fetched successfully")
         else:
-            print("Failed to fetch geocoordinates")
-            print("Error:", result.stderr)
+            logger.error(f"Failed to fetch geocoordinates: {result.stderr}")
+            return
 
         output = result.stdout
         test = output.splitlines()
@@ -154,11 +157,11 @@ class Camera:
             for publisher in publishers:
                 if (publisher.get("mqtt_topic") == mqtt_topic):
                     publisher_exists = True
-                    print(f"MQTT publisher 'frame_metadata' already exists on {self.ip}")
+                    logger.info(f"MQTT publisher 'frame_metadata' already exists on {self.ip} with topic {mqtt_topic}")
                     break
                 elif (publisher.get("data_source_key") == "com.axis.analytics_scene_description.v0.beta#1"):
                     # remove the old publisher if it exists
-                    print(f"Removing old publisher with data source key on {self.ip}")
+                    logger.info(f"Removing old publisher with data source key on {self.ip}")
                     delete_response = requests.delete(
                         f"{base_url}/publishers/{publisher['id']}",
                         auth=HTTPDigestAuth(self.username, self.password),
@@ -167,10 +170,9 @@ class Camera:
                     )
                     delete_response.raise_for_status()
                     if delete_response.json().get("status") == "success":
-                        print(f"Removed old publisher with data source key on {self.ip}")
+                        logger.info(f"Removed old publisher on {self.ip}")
                     else:
-                        print(f"Failed to remove old publisher on {self.ip}: {delete_response.text}")
-
+                        logger.error(f"Failed to remove old publisher on {self.ip}: {delete_response.text}")
             
             # Step 2: Create publisher if it doesn't exist
             if not publisher_exists:
@@ -190,13 +192,16 @@ class Camera:
                 )
                 response.raise_for_status()
                 if response.json().get("status") == "success":
-                    print(f"Created MQTT publisher 'frame_metadata' on {self.ip} with topic {mqtt_topic}")
+                    logger.info(f"MQTT publisher 'frame_metadata' created successfully on {self.ip} with topic {mqtt_topic}")
                 else:
-                    print(f"Failed to create MQTT publisher on {self.ip}: {response.text}")
-        
+                    logger.error(f"Failed to create MQTT publisher on {self.ip}: {response.text}")
         except requests.RequestException as e:
-            print(f"Error configuring MQTT publisher on {self.ip}: {str(e)}")
-            print("Ensure camera firmware >= 12.2, MQTT client is configured, and credentials are correct.")
+            logger.error(f"Failed to configure MQTT publisher on {self.ip}: {str(e)}")
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response from {self.ip}: {str(e)}")
+        except Exception as e:
+            logger.error(f"Unexpected error: {str(e)}")
+        return mqtt_topic
 
 def clear_streams():
     """Clear all streams in the config file."""
@@ -211,5 +216,5 @@ def clear_streams():
         with open(config_file, "w") as f:
             json.dump(config, f, indent=4)
     else:
-        print("Config file not found")
+        logger.error("Config file not found")
         return

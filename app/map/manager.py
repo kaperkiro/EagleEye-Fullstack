@@ -2,6 +2,10 @@ import math
 import numpy as np
 import os
 import json
+import logging
+from app.map.map_config_gui import MapConfigGUI
+
+logger = logging.getLogger(__name__)
 
 class MapManager:
     def __init__(self):
@@ -60,6 +64,25 @@ class MapManager:
         u = (dlon / width) * 100
         v = (dlat / height) * 100
         return (u, v)
+    
+    def load_map_config(self):
+        try:
+            path = os.path.join(os.path.dirname(__file__), "map_config.json")
+            if os.path.exists(path):
+                with open(path, "r") as json_file:
+                    logger.info("Map config loaded from file")
+                    return json.load(json_file)
+            else:
+                logger.info("Map config file not found, creating new one")
+                MapConfigGUI() # Open the GUI to create a new map config
+                try:
+                    with open(path, "r") as json_file:
+                        return json.load(json_file)
+                except FileNotFoundError:
+                    logger.error("Map config file not found after creating new one")
+                    return None
+        except Exception as e:
+            logger.error(f"Error loading map config: {str(e)}")
 
     def __str__(self):
         return f"Map(name={self.name}, corner_coords={self.corner_coords}, file_path={self.file_path})"

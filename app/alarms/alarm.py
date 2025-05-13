@@ -59,7 +59,7 @@ class AlarmManager:
         self.load_alarms()
 
     def load_alarms(self):
-        if os.path.exists(ALARM_FILE) and os.path.getsize(ALARM_FILE) > 10:
+        if os.path.exists(ALARM_FILE):
             try:
                 with open(ALARM_FILE, "r") as f:
                     alarms_file = json.load(f)

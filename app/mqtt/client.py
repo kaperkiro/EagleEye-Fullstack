@@ -1,8 +1,9 @@
 import paho.mqtt.client as mqtt
 import json
 from typing import List, Dict, Any
-from app.objects.manager import ObjectManager
+import logging
 
+logger = logging.getLogger(__name__)
 
 class MqttClient:
     """MQTT client for receiving and processing messages from a broker.
@@ -36,7 +37,7 @@ class MqttClient:
         reason_code: int,
         properties: Any,
     ) -> None:
-        print(f"Connected with result code {reason_code}")
+        logger.info(f"Connected to MQTT broker at {self.broker_host}:{self.broker_port} with result code: %s", reason_code)
         self.subscribe("+/frame_metadata")
 
     def _on_message(
