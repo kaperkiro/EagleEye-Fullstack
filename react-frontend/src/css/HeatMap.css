@@ -1,23 +1,23 @@
-.heatMapDiv {
+.heatDiv {
   display: flex;
   flex: 1;
   flex-direction: row;
 }
 
-.mapDiv {
-  width: 75%;
+.heatLeftSidebar {
+  width: 25%;
+  border-right: solid 0.22vw black;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
 }
-
-.heatLeftSidebar {
-  border-right: solid;
-  width: 25%;
+.heatMapDiv {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  flex-direction: row;
+  flex: 1;
+  width: 100%;
+  height: 100%;
 }
 
 .heatMapTitle {
@@ -26,6 +26,11 @@
   color: #1a202c;
   opacity: 75%;
   font-size: 40px;
+}
+
+.floorPlanImage {
+  width: 100%;
+  height: 100%;
 }
 
 .heatMapButton {

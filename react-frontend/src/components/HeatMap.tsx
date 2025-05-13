@@ -70,7 +70,7 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
 
   return (
     <div className="floorpPlanDiv">
-      <img src={imageUrl} alt="Floor Plan" />
+      <img src={imageUrl} alt="Floor Plan" className="floorPlanImage" />
       <canvas
         ref={canvasRef}
         width={800}
@@ -124,7 +124,7 @@ export const HeatMapData: React.FC = () => {
   };
 
   return (
-    <div className="heatMapDiv">
+    <div className="heatDiv">
       <div className="heatLeftSidebar">
         <h1 className="heatMapTitle">Select Timeframe</h1>
         {["Last Hour", "6 Hours", "12 Hours", "18 Hours", "24 Hours"].map(
@@ -139,7 +139,7 @@ export const HeatMapData: React.FC = () => {
           )
         )}
       </div>
-      <div className="mapDiv">
+      <div className="heatMapDiv">
         <FloorPlanWithHeatmap points={points} />
       </div>
     </div>
