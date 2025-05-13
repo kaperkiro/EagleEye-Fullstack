@@ -2,6 +2,7 @@
 import uuid
 from typing import List, Dict
 from app.utils.helper import check_if_same_observation
+from app.alarms.alarm import AlarmManager
 import time
 import json
 
@@ -29,10 +30,12 @@ class ObjectManager:
     Will always check if the observations are the same if the same the are not added.
     """
 
-    def __init__(self):
+    def __init__(self, map_manager, alarm_manager):
         self.objects: List[GlobalObject] = []
         # archive of objects no longer in any camera view
         self.history: List[GlobalObject] = []
+        self.map_manager = map_manager
+        self.alarm_manager = alarm_manager
 
     def _prune_history(self):
         """Remove archived objects older than 15 seconds"""
@@ -47,7 +50,6 @@ class ObjectManager:
         """
         * saves object to a json file.
         """
-
         def append_json_line(entry: dict):
             with open("app/heatmap/heatmap_data.jl", "a") as f:
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")
@@ -71,6 +73,16 @@ class ObjectManager:
         prev_seen = [obj for obj in self.objects if camera_id in obj.cameras]
         matched_ids = set()
         for obs in obs_list:
+
+            # Check object is trespassing
+            object_pos = None
+            if "geoposition" in obs:
+                object_pos = obs["geoposition"]
+                relative_pos = self.map_manager.convert_to_relative(
+                    (object_pos["latitude"], object_pos["longitude"])
+                )
+                self.alarm_manager.check_alarms(relative_pos)
+
             # resurrect archived object if same observation appears
             resurrected = False
             for hist_obj in list(self.history):

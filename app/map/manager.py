@@ -28,9 +28,6 @@ class MapManager:
             self.camera_geocoords[int(camera_id)] = (coords[0], coords[1])
             relative_coords = camera_data["pixel_percent"]
             self.camera_relative_coords[int(camera_id)] = (relative_coords[0], relative_coords[1])
-        
-        print(f"camera_geocoords: {self.camera_geocoords}")
-        print(f"camera_relative_coords: {self.camera_relative_coords}")
 
     def _get_floor_plan(self):
         """Get the floor plan of the map."""

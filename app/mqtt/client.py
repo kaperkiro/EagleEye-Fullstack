@@ -10,14 +10,15 @@ class MqttClient:
     Hardcoded currently to "axis/frame_metadata" and processes incoming messages.
     """
 
-    def __init__(self, broker_host="localhost", broker_port=1883, keepalive=60):
+    def __init__(self, object_manager, broker_host="localhost", broker_port=1883, keepalive=60):
 
         self.broker_host = broker_host
         self.broker_port = broker_port
         self.keepalive = keepalive
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-        self.object_manager = ObjectManager()
+        self.object_manager = object_manager
         self._setup_callbacks()
+        self.start()
 
         self.dict_position: Dict[int, List[tuple]] = (
             {}
@@ -48,7 +49,6 @@ class MqttClient:
             payload = json.loads(msg.payload.decode())
             observations = payload.get("frame", {}).get("observations", [])
             camera_id = msg.topic.split("/")[0] # Extract camera ID from topic ("cam_id"/frame_metadata)
-            # print(f"Received observations on cam {camera_id}: {observations}\n")
 
             # Update global object tracking
             self.object_manager.add_observations(camera_id, observations)

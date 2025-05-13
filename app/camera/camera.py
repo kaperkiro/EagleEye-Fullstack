@@ -58,7 +58,6 @@ class Camera:
             # client.geocoordinates.apply_settings() # Automatically sets roll so dont use!
 
             self.geocoords = (lat, lon)
-            print(f"Camera: ${self.id} configured successfully")
 
 
     def save_snapshot(self):

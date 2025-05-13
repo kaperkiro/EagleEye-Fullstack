@@ -5,11 +5,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from app.mqtt.broker import BrokerManager
 from app.mqtt.client import MqttClient
 from app.camera.webrtc import start_rtsp_to_webrtc
-from app.server import run_flask_server
+from app.server import Server
 from app.camera.camera import Camera, clear_streams
 from app.map.manager import MapManager
 from app.map.map_config_gui import MapConfigGUI
 from app.camera.arp_scan import scan_axis_cameras
+from app.alarms.alarm import AlarmManager
+from app.objects.manager import ObjectManager
 
 import threading
 import time
@@ -17,41 +19,73 @@ import logging
 import json
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 class Application:
     def __init__(self):
-        self.broker = BrokerManager()
-        self.mqtt_client = MqttClient()
         self.running = True
-        self.cameras = []
-        self.map_config = os.path.join(os.path.dirname(os.path.abspath(__file__)), "map", "map_config.json")
-        self.map_manager = None
+
+        logger = logging.getLogger("Application")
+
+        logger.info("Clearing RTSP to WebRTC config")
+        clear_streams()
+
+        logger.info("Scanning for cameras")
+        self.cameras = self.find_cameras()
+
+        logger.info("Checking for map config")
+        self.map_config = self.load_map_config()
+
+        logger.info("Updating camera configurations")
+        self.update_cameras_configs()
+
+        logger.info("Initializing map manager")
+        self.map_manager = MapManager()
+
+        logger.info("Initializing alarm manager")
+        self.alarm_manager = AlarmManager()
+        
+        logger.info("Initializing object manager")
+        self.object_manager = ObjectManager(self.map_manager, self.alarm_manager)
+
+        logger.info("Initializing MQTT broker")
+        self.broker = BrokerManager()
+
+        logger.info("Initializing MQTT client")
+        self.mqtt_client = MqttClient(self.object_manager)
+
+        logger.info("Starting RTSP to WebRTC server")
+        threading.Thread(target=start_rtsp_to_webrtc, daemon=True).start()
+
+        logger.info("Starting Flask server")
+        threading.Thread(target=Server, args=(self.mqtt_client, self.map_manager, self.alarm_manager), daemon=True).start()
 
     def find_cameras(self):
+        cameras = []
         try:
             scan_results = scan_axis_cameras()
-            if not scan_results: # För att hitta när man kör via routern
-                logger.info("No Axis cameras found at 192.168.0.0/24 trying 192.168.1.0/24")
-                scan_results = scan_axis_cameras(ip_range="192.168.1.0/24")
             if scan_results:
                 for id, ip, mac, manufacturer in scan_results:
-                    self.cameras.append(Camera(ip=ip, id=id))
+                    cameras.append(Camera(ip=ip, id=id))
+                return cameras
             else:
-                logger.info("No Axis cameras found")
+                logger.info("No Axis cameras found on 192.168.0.0/24 subnet")
+                return []
         except Exception as e:
             logger.error(f"Error during camera discovery: {str(e)}")
     
     def load_map_config(self):
         try:
-            if os.path.exists(self.map_config):
-                with open(self.map_config, "r") as json_file:
-                    self.map_config = json.load(json_file)
+            path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "map", "map_config.json")
+            if os.path.exists(path):
+                with open(path, "r") as json_file:
+                    return json.load(json_file)
                 logger.info("Map config loaded from file")
             else:
                 logger.info("Map config file not found, creating new one")
-                MapConfigGUI()
-                with open(self.map_config, "r") as json_file:
-                    self.map_config = json.load(json_file)
+                MapConfigGUI() # Open the GUI to create a new map config
+                with open(path, "r") as json_file:
+                    return json.load(json_file)
         except Exception as e:
             logger.error(f"Error loading map config: {str(e)}")
 
@@ -68,16 +102,6 @@ class Application:
         except Exception as e:
             logger.error(f"Error updating camera configurations: {str(e)}")
 
-    def init_map_manager(self):
-        try:
-            if self.map_manager is None:
-                self.map_manager = MapManager()
-                logger.info("Map manager initialized")
-            else:
-                logger.info("Map manager already initialized")
-        except Exception as e:
-            logger.error(f"Error initializing map manager: {str(e)}")
-
     def stop_application(self):
         self.running = False
         self.mqtt_client.stop()
@@ -86,33 +110,6 @@ class Application:
 
     def run(self):
         try:
-            logger.info("Clearing RTSP to WebRTC config")
-            clear_streams()
-
-            logger.info("Scanning for cameras")
-            self.find_cameras()
-
-            logger.info("Starting MQTT broker")
-            self.broker.start()
-
-            logger.info("Connecting MQTT client")
-            self.mqtt_client.start()
-
-            logger.info("Checking for map config")
-            self.load_map_config()            
-                
-            logger.info("Initializing map manager")
-            self.init_map_manager()
-
-            logger.info("Updating camera configurations")
-            self.update_cameras_configs()
-
-            logger.info("Starting RTSP to WebRTC server")
-            threading.Thread(target=start_rtsp_to_webrtc, daemon=True).start()
-
-            logger.info("Starting Flask server")
-            threading.Thread(target=run_flask_server, args=(self.mqtt_client, self.map_manager), daemon=True).start()
-
             while self.running:
                 time.sleep(1)
 

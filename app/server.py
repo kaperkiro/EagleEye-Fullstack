@@ -1,213 +1,128 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
+from app.heatmap.heatmap import create_heatmap
 import os
-import sys
 import uuid
 import json
 import logging
 import threading
 
-# Ensure project root (parent of app) is on PYTHONPATH when running as a script
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from app.mqtt.publisher import MqttPublisher
-from app.heatmap.heatmap import create_heatmap
-from app.mqtt.client import MqttClient
-from app.map.manager import MapManager
+class Server:
+    def __init__(self, mqtt_client, map_manager, alarm_manager):
+        self.mqtt_client = mqtt_client
+        self.map_manager = map_manager
+        self.alarm_manager = alarm_manager
+        
+        self.app = Flask(__name__)
+        CORS(self.app)
+        self.ALARM_FILE = os.path.join("app", "alarms", "alarms.json")
+        self.setup_routes()
+        self.run()
 
-logging.basicConfig(level=logging.INFO)
-app = Flask(__name__)
-CORS(app)
+    def setup_routes(self):
+        app = self.app
 
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)  # Suppress Flask's default logging
+        @app.route("/api/alarms", methods=["POST"])
+        def create_alarm_zone():
+            print("TRYING TO DELETE ALARM")
 
-ALARM_FILE = "data/alarms.json"
-MAP_PATH = "map.jpg"
+            new_alarm = request.get_json()
+            if not new_alarm:
+                return jsonify({"error": "No alarm zone provided"}), 400
 
+            new_alarm["id"] = str(uuid.uuid4())
+            self.alarm_manager.add_alarm(new_alarm)
+            logging.info("Saved new alarm zone: %s", new_alarm)
+            return (
+                jsonify({"alarm": new_alarm, "message": "Alarm zone saved successfully"}),
+                201,
+            )
 
-def run_flask_server(
-    mqtt_client_instance: MqttClient, map_manager_instance: MapManager
-):
-    global mqtt_client
-    mqtt_client = mqtt_client_instance
-    global map_manager
-    map_manager = map_manager_instance
-    logging.info("Starting Flask server...")
-    app.run(debug=True, port=5001, use_reloader=False, host="0.0.0.0")
+        @app.route("/api/alarms/<string:alarm_id>", methods=["DELETE"])
+        def delete_alarm(alarm_id):
+            print("TRYING TO DELETE ALARM")
+            self.alarm_manager.remove_alarm(alarm_id)
+            logging.info("Removed alarm zone with id: %s", alarm_id)
+            return jsonify({"message": "Alarm zone removed successfully"}), 200
 
-
-def load_alarms():
-    if os.path.exists(ALARM_FILE):
-        try:
-            with open(ALARM_FILE, "r") as f:
-                alarms = json.load(f)
-                if isinstance(alarms, list):
-                    return alarms
-        except Exception as e:
-            logging.error(f"Error reading alarms file: {e}")
-    return []
-
-
-def save_alarms(alarms):
-    try:
-        with open(ALARM_FILE, "w") as f:
-            json.dump(alarms, f)
-    except Exception as e:
-        logging.error(f"Error writing alarms file: {e}")
-
-
-@app.route("/api/alarms", methods=["POST"])
-def create_alarm_zone():
-    """
-    POST endpoint for creating a new alarm zone.
-    Expects JSON with the alarm zone properties (excluding the id), e.g.:
-    {
-         "topLeft": {"x": number, "y": number},
-         "bottomRight": {"x": number, "y": number},
-         "active": <boolean>,
-         "triggered": <boolean>
-    }
-    The backend will generate a unique ID for the alarm zone.
-    """
-    new_alarm = request.get_json()
-    if not new_alarm:
-        return jsonify({"error": "No alarm zone provided"}), 400
-
-    # Generate a unique ID for the new alarm zone using uuid4
-    new_alarm["id"] = str(uuid.uuid4())
-
-    alarms = load_alarms()
-    alarms.append(new_alarm)
-    save_alarms(alarms)
-    logging.info("Saved new alarm zone: %s", new_alarm)
-    return (
-        jsonify({"alarm": new_alarm, "message": "Alarm zone saved successfully"}),
-        201,
-    )
-
-
-@app.route("/api/heatmap/<timeframe>", methods=["GET"])
-def get_heatmap(timeframe):
-    payload = create_heatmap(timeframe, map_manager)
-    return jsonify({"heatmap": payload}), 200
-
-
-@app.route("/api/alarms/<string:alarm_id>", methods=["DELETE"])
-def delete_alarm(alarm_id):
-    """
-    DELETE endpoint for removing an alarm zone by its ID.
-
-    """
-    alarms = load_alarms()
-    new_alarms = [alarm for alarm in alarms if alarm.get("id") != alarm_id]
-    if len(new_alarms) == len(alarms):
-        return jsonify({"error": "No matching alarm zone found"}), 404
-    save_alarms(new_alarms)
-    logging.info("Removed alarm zone with id: %s", alarm_id)
-    return jsonify({"message": "Alarm zone removed successfully"}), 200
-
-
-@app.route("/api/alarms/status/<string:alarm_id>", methods=["POST", "PATCH"])
-def status_alarm(alarm_id):
-    """
-    POST endpoint for changing the status of an alarm zone by its ID.
-    """
-    if not alarm_id:
-        return jsonify({"message": "No zone included "}), 404
-    alarms = load_alarms()
-    for alarm in alarms:
-        if alarm["id"] == alarm_id:
-            alarm["active"] = not alarm["active"]
-            save_alarms(alarms)
+        @app.route("/api/alarms", methods=["GET"])
+        def get_alarms():
+            alarms = self.alarm_manager.get_alarms_file()
+            return jsonify({"alarms": alarms})
+        
+        @app.route("/api/alarms/status/<string:alarm_id>", methods=["POST", "PATCH"])
+        def status_alarm(alarm_id):
+            """
+            POST endpoint for changing the status of an alarm zone by its ID.
+            """
+            success = self.alarm_manager.toggle_alarm(alarm_id)
+            if not success:
+                return jsonify({"error": "Alarm zone not found"}), 404
             return jsonify({"message": "Status changes succesfully"}), 200
-    return jsonify({"message": "Zone not found "}), 404
 
 
-@app.route("/api/alarms", methods=["GET"])
-def get_alarms():
-    """
-    GET endpoint for retrieving all alarm zones.
-    """
-    alarms = load_alarms()
-    logging.info(f"Loaded {len(alarms)} alarm zones.")
-    return jsonify({"alarms": alarms})
+        @app.route("/api/objects/<int:camera_id>", methods=["GET"])
+        def get_camera_detections_by_id(camera_id: int):
+            print(f"GET CAMERA DETECTIONS BY ID: {camera_id}")
+            if not self.mqtt_client:
+                return jsonify({"message": "MQTT client not available"}), 503
+            raw = self.mqtt_client.object_manager.get_objects_by_camera(camera_id)
+            observations = []
+            for entry in raw:
+                obj_id = entry.get("id")
+                geo = entry.get("geoposition", {})
+                lat = geo.get("latitude")
+                lon = geo.get("longitude")
+                if lat is None or lon is None:
+                    continue
+                x, y = self.map_manager.convert_to_relative((lat, lon))
+                observations.append({"camera_id": camera_id, "x": x, "y": y, "id": obj_id})
+            return jsonify({"observations": observations}), 200
+
+        @app.route("/map")
+        def get_map():
+            if os.path.exists(self.map_manager.file_path):
+                return send_file(self.map_manager.file_path)
+            else:
+                return jsonify({"message": "Map file not found"}), 404
+            
+        @app.route("/api/objects", methods=["GET"])
+        def get_observations():
+            """GET endpoint for retrieving all tracked observations in relative coords."""
+            # retrieve raw position data from ObjectManager
+            raw = self.mqtt_client.object_manager.get_all_objects()
+            observations = []
+            for entry in raw:
+                cam_id = entry.get("camera_id")
+                obj_id = entry.get("id")
+                geo = entry.get("geoposition", {})
+                lat = geo.get("latitude")
+                lon = geo.get("longitude")
+                if lat is None or lon is None:
+                    continue
+                x, y = self.map_manager.convert_to_relative((lat, lon))
+                observations.append({"cid": cam_id, "x": x, "y": y, "id": obj_id})
+            return jsonify({"objects": observations}), 200
+
+        @app.route("/api/heatmap/<timeframe>", methods=["GET"])
+        def get_heatmap(timeframe):
+            payload = create_heatmap(timeframe, self.map_manager)
+            return jsonify({"heatmap": payload}), 200
 
 
-@app.route("/api/objects/<int:camera_id>", methods=["GET"])
-def get_camera_detections_by_id(camera_id: int) -> jsonify:
-    """Gets all tracked detections for a camera in relative coords."""
-    # Ensure MQTT client is initialized
-    if not mqtt_client:
-        return jsonify({"message": "MQTT client not available"}), 503
-    # Get global object list for this camera
-    raw = mqtt_client.object_manager.get_objects_by_camera(camera_id)
-    observations = []
-    for entry in raw:
-        obj_id = entry.get("id")
-        geo = entry.get("geoposition", {})
-        lat = geo.get("latitude")
-        lon = geo.get("longitude")
-        if lat is None or lon is None:
-            continue
-        x, y = map_manager.convert_to_relative((lat, lon))
-        observations.append({"camera_id": camera_id, "x": x, "y": y, "id": obj_id})
-    return jsonify({"observations": observations}), 200
-
-
-@app.route("/api/objects", methods=["GET"])
-def get_observations():
-    """GET endpoint for retrieving all tracked observations in relative coords."""
-    if mqtt_client:
-        # retrieve raw position data from ObjectManager
-        raw = mqtt_client.object_manager.get_all_objects()
-        observations = []
-        for entry in raw:
-            cam_id = entry.get("camera_id")
-            obj_id = entry.get("id")
-            geo = entry.get("geoposition", {})
-            lat = geo.get("latitude")
-            lon = geo.get("longitude")
-            if lat is None or lon is None:
-                continue
-            x, y = map_manager.convert_to_relative((lat, lon))
-            observations.append({"cid": cam_id, "x": x, "y": y, "id": obj_id})
-        return jsonify({"objects": observations}), 200
-    else:
-        return jsonify({"message": "MQTT client not available"}), 503
-
-
-@app.route("/map")
-def get_map():
-    """
-    This endpoint is used to send the map file to the client.
-    """
-    print("Sending map file")
-    print(map_manager.file_path)
-    if os.path.exists(map_manager.file_path):
-        return send_file(
-            map_manager.file_path,
-        )
-    else:
-        return jsonify({"message": "Map file not found"}), 404
-
-
-@app.route("/api/camera_positions", methods=["GET"])
-def get_camera_positions():
-    """Returns the camera positions in relative coordinates."""
-    if mqtt_client:
-        camera_positions = map_manager.camera_relative_coords
-        if not camera_positions:
-            return jsonify({"message": "No camera positions available"}), 503
-        return jsonify({"cam_pos": camera_positions}), 200
-    else:
-        return jsonify({"message": "MQTT client not available"}), 503
+    def run(self):
+        logging.info("Starting Flask server...")
+        log = logging.getLogger('werkzeug')
+        log.setLevel(logging.ERROR)  # Suppress Flask's default logging
+        self.app.run(debug=True, port=5001, use_reloader=False, host="0.0.0.0")
 
 
 if __name__ == "__main__":
+    from app.mqtt.client import MqttClient
+    from app.map.manager import MapManager
 
     assets_dir = os.path.join(os.path.dirname(__file__), "assets")
     floor_plan = os.path.join(assets_dir, "floor_plan.jpg")
-    # Initialize the map holder
     map_instance = MapManager(
         "Local House",
         [
@@ -218,9 +133,9 @@ if __name__ == "__main__":
         ],
         floor_plan,
         {
-            1: (59.3249, 18.0701),  # top-left
-            2: (59.3242, 18.0709),  # bottom-right
-            3: (59.3245, 18.0705),  # center
+            1: (59.3249, 18.0701),
+            2: (59.3242, 18.0709),
+            3: (59.3245, 18.0705),
         },
     )
 
@@ -228,16 +143,5 @@ if __name__ == "__main__":
     mqtt_instance.connect()
     mqtt_instance.start_background_loop()
 
-    publisher = MqttPublisher(camera_id=1)
-    publisher.connect()
-    threading.Thread(target=publisher.run, daemon=True).start()
-
-    publisher2 = MqttPublisher(camera_id=2)
-    publisher2.connect()
-    threading.Thread(target=publisher2.run, daemon=True).start()
-
-    publisher3 = MqttPublisher(camera_id=3)
-    publisher3.connect()
-    threading.Thread(target=publisher3.run, daemon=True).start()
-
-    run_flask_server(mqtt_instance, map_instance)
+    server = Server(mqtt_instance, map_instance)
+    server.run()

@@ -9,6 +9,7 @@ class BrokerManager:
         self.host = host
         self.port = port
         self.config_file = config_file
+        self.start()
 
     def is_running(self) -> bool:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -32,7 +33,6 @@ class BrokerManager:
         if self.is_running():
             print("Mosquitto is already running.")
         else:
-            print("Starting Mosquitto broker...")
             subprocess.Popen(
                 f"mosquitto -c {self.config_file}", shell=True
             )  # add -v flag to enable verbose logging
