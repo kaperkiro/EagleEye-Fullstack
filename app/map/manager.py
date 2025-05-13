@@ -8,7 +8,7 @@ from app.map.map_config_gui import MapConfigGUI
 logger = logging.getLogger(__name__)
 
 class MapManager:
-    def __init__(self):
+    def __init__(self, cameras):
         """Holds the current map used in the frontend to convert to relative xy coordinates
         instead of absolute geocoordinates.
 
@@ -21,7 +21,7 @@ class MapManager:
             file_path (str): filepath of the image file of the map
             camera_geocoords (dict): dictionary of camera geocoordinates in the format {camera_id: (lat, lon)}
         """
-        self.map_config = json.load(open(os.path.join(os.path.dirname(__file__), "map_config.json"), "r"))
+        self.map_config = self.load_map_config()
         self.name = self.map_config["name"]
         self.corner_coords = [(lat, lon) for lat, lon in self.map_config["corners"]] # [(lat, lon), ...] in order TL, TR, BR, BL
         self.file_path = self._get_floor_plan()  # Get the floor plan image file path

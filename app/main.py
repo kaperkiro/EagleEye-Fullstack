@@ -32,7 +32,7 @@ class Application:
         self.cameras = find_cameras()
 
         logger.info("Initializing map manager")
-        self.map_manager = MapManager()
+        self.map_manager = MapManager(self.cameras)
 
         logger.info("Checking for map config")
         self.map_config = self.map_manager.load_map_config()
