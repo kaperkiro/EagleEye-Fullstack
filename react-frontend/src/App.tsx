@@ -54,7 +54,7 @@ function App() {
               className={`toggle-button ${activeIndex === 1 ? "active" : ""}`}
               onClick={() => handleButtonClick(1)}
             >
-              <p className="buttonText">Historical</p>
+              <p className="buttonText">Heatmap</p>
             </button>
             <button
               className={`toggle-button ${activeIndex === 2 ? "active" : ""}`}
