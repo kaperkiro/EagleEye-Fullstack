@@ -23,7 +23,7 @@ root/
 │   │   ├── alarm.py
 │   │   └── alarms.json
 │   ├── camera/              # Camera configuration and video processing
-│   │   ├── axis_cameras.json
+│   │   ├── cameras.json
 │   │   ├── calibration.py
 │   │   ├── camera.py
 │   │   └── webrtc.py
@@ -54,7 +54,7 @@ root/
 EagleEye operates as a modular system with the following components:
 
 1. **Camera Module (`app/camera/`)**:
-   - Configures Axis cameras (`axis_cameras.json`) and processes video feeds (`camera.py`, `webrtc.py`).
+   - Configures Axis cameras (`cameras.json`) and processes video feeds (`camera.py`, `webrtc.py`).
    - Uses calibration data (`calibration.py`) to map camera coordinates to geopositions.
    - Outputs observations (humans/faces with bounding boxes, geopositions, timestamps).
 

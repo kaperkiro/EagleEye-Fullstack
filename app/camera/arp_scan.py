@@ -55,7 +55,7 @@ def arp_scan(ip_range, interface):
         devices.append((ip, mac, manufacturer))
     return devices
 
-def save_results(devices, output_file="axis_cameras.json"):
+def save_results(devices, output_file="cameras.json"):
     """Save devices to a JSON file in the script's directory, filtering for Axis Communications, with assigned IDs."""
     timestamp = datetime.now().strftime("%Y-%m-01 %H:%M:%S")
     axis_devices = [d for d in devices if d[2] == "Axis Communications AB"]
@@ -78,7 +78,7 @@ def save_results(devices, output_file="axis_cameras.json"):
     
     return [(d["ID"], d["IP Address"], d["MAC Address"], d["Manufacturer"]) for d in axis_devices_with_id]
 
-def scan_axis_cameras(ip_range="192.168.0.0/24", output_file="axis_cameras.json"):
+def scan_axis_cameras(ip_range="192.168.0.0/24", output_file="cameras.json"):
     """
     Perform an ARP scan to find Axis Communications cameras, assign IDs, and save results to JSON.
     Returns a list of tuples (ID, IP, MAC, Manufacturer) for Axis devices.

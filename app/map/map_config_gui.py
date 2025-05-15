@@ -5,7 +5,9 @@ import json
 import math
 from geopy.distance import geodesic
 import os
+import logging
 
+logger = logging.getLogger(__name__)
 
 class MapConfigGUI:
     """Graphical interface for configuring geopositions on a floor plan map.
@@ -25,6 +27,16 @@ class MapConfigGUI:
         self.root = tk.Tk()
         self.root.title("EagleEye Map Configuration")
         self.root.configure(bg="#333333")
+
+        # Set window icon
+        try:
+            icon_image = Image.open(os.path.join(os.path.dirname(__file__), "..", "assets", "logo_no_text.png"))
+            icon_image = icon_image.resize((32, 32), Image.Resampling.LANCZOS)
+            self.icon = ImageTk.PhotoImage(icon_image)
+            self.root.iconphoto(False, self.icon)
+        except FileNotFoundError:
+            logger.error("Icon file not found. Using default icon.")
+            
 
         # Set file paths
         self.floor_plan_path = os.path.join(os.path.dirname(__file__), floor_plan_path)
@@ -60,11 +72,11 @@ class MapConfigGUI:
         self.rotating_camera_id = None  # ID of camera being rotated
         self.arrow_hitbox_radius = 10  # Click radius for arrow endpoints
 
-        # Load camera IDs from axis_cameras.json
+        # Load camera IDs from cameras.json
         self.camera_ids = []
         self.camera_display_map = {}  # Maps display string to camera ID
         try:
-            json_path = os.path.join(os.path.dirname(__file__), "../camera/axis_cameras.json")
+            json_path = os.path.join(os.path.dirname(__file__), "../camera/cameras.json")
             with open(json_path, 'r') as f:
                 cameras = json.load(f)
                 for camera in cameras:
@@ -74,7 +86,7 @@ class MapConfigGUI:
                         self.camera_ids.append(display_str)
                         self.camera_display_map[display_str] = camera_id
         except (FileNotFoundError, json.JSONDecodeError, KeyError):
-            messagebox.showwarning("Warning", "Could not load camera IDs from axis_cameras.json. Please run ARP scan first.")
+            messagebox.showwarning("Warning", "Could not load camera IDs from cameras.json. Please run ARP scan first.")
 
         # Setup GUI elements
         self.setup_frame = tk.Frame(self.root, bg="#333333")

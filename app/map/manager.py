@@ -24,13 +24,10 @@ class MapManager:
         self.name = self.map_config["name"]
         self.corner_coords = [(lat, lon) for lat, lon in self.map_config["corners"]] # [(lat, lon), ...] in order TL, TR, BR, BL
         self.file_path = self._get_floor_plan()  # Get the floor plan image file path
-        self.camera_geocoords = {}
         self.camera_relative_coords = {}
         for camera_id, camera_data in self.map_config["cameras"].items():
-            coords = camera_data["geocoordinates"]
-            self.camera_geocoords[int(camera_id)] = (coords[0], coords[1])
             relative_coords = camera_data["pixel_percent"]
-            self.camera_relative_coords[int(camera_id)] = (relative_coords[0], relative_coords[1])
+            self.camera_relative_coords[int(camera_id)] = {"x": relative_coords[0], "y": relative_coords[1]}
 
     def _get_floor_plan(self):
         """Get the floor plan of the map."""
@@ -82,6 +79,10 @@ class MapManager:
                     return None
         except Exception as e:
             logger.error(f"Error loading map config: {str(e)}")
+
+    def get_camera_relative_positions(self):
+        """Get the camera positions in relative coordinates."""
+        return self.camera_relative_coords
 
     def __str__(self):
         return f"Map(name={self.name}, corner_coords={self.corner_coords}, file_path={self.file_path})"
