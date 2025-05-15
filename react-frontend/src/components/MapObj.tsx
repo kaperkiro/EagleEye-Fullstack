@@ -78,7 +78,7 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
   useEffect(() => {
     pollCameras();
     fetchPositionData();
-    const interval = setInterval(fetchPositionData, 100);
+    const interval = setInterval(fetchPositionData, 200);
     return () => clearInterval(interval);
   }, []);
 
