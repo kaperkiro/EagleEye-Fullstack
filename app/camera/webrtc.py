@@ -1,6 +1,7 @@
 import subprocess
 import os
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ def start_rtsp_to_webrtc():
         logger.info("RTSPtoWebRTC server started successfully. Preview URL: http://localhost:8083")
 
         for line in process.stdout:  # Read output line by line
-            print(line.strip())
+            logger.info(line.strip())
 
         # Check for errors
         process.wait()  # Wait for the process to complete (optional, remove if you want it to run in background)
@@ -48,6 +49,44 @@ def start_rtsp_to_webrtc():
     finally:
         if process:
             process.terminate()
+
+def add_camera_to_config(cam_id, cam_ip, cam_username = "student", cam_password = "student_pass") -> None:
+    """Add the camera dynamically to the config file."""
+    config_file = "external/RTSPtoWebRTC/config.json"
+    if os.path.exists(config_file):
+        with open(config_file, "r") as f:
+            config = json.load(f)
+
+        streams = config.get("streams", {})
+        if cam_id not in streams:
+            logger.info(f"Adding camera {cam_id} to config file")
+            streams[cam_id] = {
+                "on_demand": False,
+                "disable_audio": True,
+                "url": f"rtsp://{cam_username}:{cam_password}@{cam_ip}/axis-media/media.amp",
+            }
+            config["streams"] = streams
+            with open(config_file, "w") as f:
+                json.dump(config, f, indent=4)
+    else:
+        logger.error("Config file not found")
+        return
+    
+def clear_streams():
+    """Clear all streams in the config file."""
+    config_file = "external/RTSPtoWebRTC/config.json"
+    if os.path.exists(config_file):
+        with open(config_file, "r") as f:
+            config = json.load(f)
+
+        streams = config.get("streams", {})
+        streams = {}
+        config["streams"] = streams
+        with open(config_file, "w") as f:
+            json.dump(config, f, indent=4)
+    else:
+        logger.error("Config file not found")
+        return
 
 
 if __name__ == "__main__":

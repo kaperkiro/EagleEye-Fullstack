@@ -4,16 +4,14 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from app.mqtt.broker import BrokerManager
 from app.mqtt.client import MqttClient
-from app.camera.webrtc import start_rtsp_to_webrtc
+from app.camera.webrtc import start_rtsp_to_webrtc, clear_streams
 from app.server import Server
-from app.camera.camera import clear_streams
 from app.map.manager import MapManager
 from app.camera.arp_scan import find_cameras
 from app.alarms.alarm import AlarmManager
 from app.objects.manager import ObjectManager
 
 import threading
-import time
 import logging
 
 logger = logging.getLogger(__name__)
@@ -79,7 +77,7 @@ class Application:
     def run(self):
         try:
             while self.running:
-                time.sleep(1)
+                pass
 
         except Exception as e:
             logger.error(f"Application error: {str(e)}")

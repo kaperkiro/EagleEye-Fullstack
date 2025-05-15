@@ -33,8 +33,6 @@ class Server:
 
         @app.route("/api/alarms", methods=["POST"])
         def create_alarm_zone():
-            print("TRYING TO DELETE ALARM")
-
             new_alarm = request.get_json()
             if not new_alarm:
                 return jsonify({"error": "No alarm zone provided"}), 400
@@ -49,7 +47,6 @@ class Server:
 
         @app.route("/api/alarms/<string:alarm_id>", methods=["DELETE"])
         def delete_alarm(alarm_id):
-            print("TRYING TO DELETE ALARM")
             self.alarm_manager.remove_alarm(alarm_id)
             logging.info("Removed alarm zone with id: %s", alarm_id)
             return jsonify({"message": "Alarm zone removed successfully"}), 200
@@ -72,7 +69,6 @@ class Server:
 
         @app.route("/api/objects/<int:camera_id>", methods=["GET"])
         def get_camera_detections_by_id(camera_id: int):
-            print(f"GET CAMERA DETECTIONS BY ID: {camera_id}")
             if not self.mqtt_client:
                 return jsonify({"message": "MQTT client not available"}), 503
             raw = self.mqtt_client.object_manager.get_objects_by_camera(camera_id)

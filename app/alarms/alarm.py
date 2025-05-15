@@ -2,10 +2,7 @@ import os
 import json
 import logging
 
-try:
-    ALARM_FILE = os.path.join(os.path.dirname(__file__), "alarms.json")
-except NameError:
-    ALARM_FILE = os.path.join("app", "alarms", "alarms.json")
+logger = logging.getLogger(__name__)
 
 class Alarm:
     def __init__(self, id, topLeft, bottomRight, active, triggered):
@@ -56,12 +53,13 @@ class AlarmManager:
         self.alarms = None
         self.active_alarms = None
         self.triggered_alarms = None
+        self.alarm_file = os.path.join(os.path.dirname(__file__), "alarms.json")
         self.load_alarms()
 
     def load_alarms(self):
-        if os.path.exists(ALARM_FILE):
+        if os.path.exists(self.alarm_file):
             try:
-                with open(ALARM_FILE, "r") as f:
+                with open(self.alarm_file, "r") as f:
                     alarms_file = json.load(f)
                     if isinstance(alarms_file, list):
                         self.alarms = [Alarm(**alarm) for alarm in alarms_file]
@@ -73,10 +71,10 @@ class AlarmManager:
             self.alarms = []
             self.active_alarms = []
             self.triggered_alarms = []
-            logging.info(f"Alarms file {ALARM_FILE} not found. Creating a new one.")
-            with open(ALARM_FILE, "w") as f:
+            logging.info(f"Alarms file {self.alarm_file} not found. Creating a new one.")
+            with open(self.alarm_file, "w") as f:
                 json.dump([], f, indent=4)
-                logging.info(f"Created new alarms file: {ALARM_FILE}")
+                logging.info(f"Created new alarms file: {self.alarm_file}")
     
     def check_alarms(self, position):
         if not self.active_alarms:
@@ -87,41 +85,43 @@ class AlarmManager:
                 self.triggered_alarms.append(alarm)
                 logging.info(f"Alarm {alarm.id} triggered by object at {position}")
                 # Save the alarm to the file
-                with open(ALARM_FILE, "w") as f:
+                with open(self.alarm_file, "w") as f:
                     json.dump([alarm.__dict__ for alarm in self.alarms], f, indent=4)
-                logging.info(f"Saved triggered alarm to {ALARM_FILE}")
+                logging.info(f"Saved triggered alarm to {self.alarm_file}")
 
     def get_alarms_file(self):
         """Get the alarms from the file."""
-        if os.path.exists(ALARM_FILE):
-            with open(ALARM_FILE, "r") as f:
-                if os.path.getsize(ALARM_FILE) == 0:
+        if os.path.exists(self.alarm_file):
+            with open(self.alarm_file, "r") as f:
+                if os.path.getsize(self.alarm_file) == 0:
                     return []
-                alarms = json.load(f)
+                try:
+                    alarms = json.load(f)
+                except json.JSONDecodeError:
+                    logging.error(f"Error decoding JSON from {self.alarm_file}")
+                    return []
                 return alarms
         else:
             return []
     
     def add_alarm(self, alarm: json):
         new_alarm = Alarm.create_from_json(alarm)
-        print(f"Adding new alarm: {new_alarm}")
         self.alarms.append(new_alarm)
         self.active_alarms.append(new_alarm)
-        print(f"Added new alarm: {new_alarm}")
         
         # Save the alarm to the file
-        with open(ALARM_FILE, "w") as f:
+        with open(self.alarm_file, "w") as f:
             json.dump([alarm.__dict__ for alarm in self.alarms], f, indent=4)
-        print(f"Saved alarm to {ALARM_FILE}")
+        logger.info(f"Added new alarm: {new_alarm.id}")
 
     def remove_alarm(self, alarm_id):
         self.alarms = [alarm for alarm in self.alarms if alarm.id != alarm_id]
         self.active_alarms = [alarm for alarm in self.active_alarms if alarm.id != alarm_id]
         self.triggered_alarms = [alarm for alarm in self.triggered_alarms if alarm.id != alarm_id]
         # Remove the alarm from the file
-        with open(ALARM_FILE, "w") as f:
+        with open(self.alarm_file, "w") as f:
             json.dump([alarm.__dict__ for alarm in self.alarms], f, indent=4)
-        print(f"Removed alarm with id: {alarm_id}")
+        logger.info(f"Removed alarm: {alarm_id}")
 
     def toggle_alarm(self, alarm_id):
         for alarm in self.alarms:
@@ -131,8 +131,9 @@ class AlarmManager:
                 else:
                     alarm.enable_alarm()
                 # Save the alarm to the file
-                with open(ALARM_FILE, "w") as f:
+                with open(self.alarm_file, "w") as f:
                     json.dump([alarm.__dict__ for alarm in self.alarms], f, indent=4)
-                print(f"Toggled alarm with id: {alarm_id}")
+                logger.info(f"Toggled alarm: {alarm_id} to {'enabled' if alarm.active else 'disabled'}")
                 return True
+        logger.warning(f"Alarm {alarm_id} not found")
         return False

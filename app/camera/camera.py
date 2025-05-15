@@ -4,6 +4,7 @@ import subprocess
 import requests
 from requests.auth import HTTPDigestAuth
 from ax_devil_device_api import Client, DeviceConfig
+from app.camera.webrtc import add_camera_to_config
 import logging
 
 logger = logging.getLogger(__name__)
@@ -32,8 +33,10 @@ class Camera:
             DeviceConfig(self.ip, "student", "student_pass", verify_ssl=False)
         )
 
-        self._add_to_config()
-        self.configure_mqtt_frame_metadata()
+        self._configure_mqtt_publisher(mqtt_topic=f"{self.id}/frame_metadata", publisher_key="com.axis.analytics_scene_description.v0.beta#1")
+        # self._configure_mqtt_publisher(mqtt_topic=f"{self.id}/consolidated_metadata", publisher_key="com.axis.consolidated_track.v1.beta#1")
+
+        add_camera_to_config(cam_id=self.id, cam_ip=self.ip, cam_username=self.username, cam_password=self.password)
 
     def configure_camera(
         self,
@@ -78,73 +81,25 @@ class Camera:
                 timeout=10
             )
             response.raise_for_status()
-            with open(f"{self.id}_snapshot.jpg", "wb") as f:
+            with open(f"app/assets/{self.id}_snapshot.jpg", "wb") as f:
                 f.write(response.content)
             logger.info(f"Snapshot saved as {self.id}_snapshot.jpg")
         except requests.RequestException as e:
             logger.error(f"Failed to save snapshot for {self.ip}: {str(e)}")
 
-    def _add_to_config(self) -> None:
-        """Add the camera dynamically to the config file."""
-        config_file = "external/RTSPtoWebRTC/config.json"
-        if os.path.exists(config_file):
-            with open(config_file, "r") as f:
-                config = json.load(f)
-
-            streams = config.get("streams", {})
-            if self.id not in streams:
-                logger.info(f"Adding camera {self.id} to config file")
-                streams[self.id] = {
-                    "on_demand": False,
-                    "disable_audio": True,
-                    "url": f"rtsp://{self.username}:{self.password}@{self.ip}/axis-media/media.amp",
-                }
-                config["streams"] = streams
-                with open(config_file, "w") as f:
-                    json.dump(config, f, indent=4)
-        else:
-            logger.error("Config file not found")
-            return
-
-    @DeprecationWarning
-    def _set_cameras_geocoords(self):
-        """USE configure_camera() instead. Fetch geocoordinates from the camera using a curl command."""
-        result = subprocess.run(
-            f"curl --digest -u {self.username}:{self.password} http://{self.ip}/axis-cgi/geolocation/get.cgi",
-            shell=True,
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode == 0:
-            logger.info("Geocoordinates fetched successfully")
-        else:
-            logger.error(f"Failed to fetch geocoordinates: {result.stderr}")
-            return
-
-        output = result.stdout
-        test = output.splitlines()
-        for line in test:
-            if "Lat" in line:
-                lat = line.split(">")[1].split("<")[0]
-            if "Lng" in line:
-                lng = line.split(">")[1].split("<")[0]
-                self.geocoords = (lat, lng)
-
-    def configure_mqtt_frame_metadata(self, mqtt_topic=None):
+    def _configure_mqtt_publisher(self, mqtt_topic=None, publisher_key=None):
         """
         Check if an MQTT publisher with ID 'frame_metadata' and data source key
         'com.axis.analytics_scene_description.v0.beta#1' exists. If not, create one.
         """
-        base_url = f"http://{self.ip}/config/rest/analytics-mqtt/v1beta"
+        base_url = f"http://{self.ip}/config/rest/analytics-mqtt/v1beta/publishers"
         headers = {"accept": "application/json"}
-
-        if mqtt_topic is None:
-            mqtt_topic = f"{self.id}/frame_metadata"
+        publisher_id = mqtt_topic.split("/")[1]
         
         try:
             # Step 1: Retrieve existing publishers
             response = requests.get(
-                f"{base_url}/publishers",
+                f"{base_url}",
                 auth=HTTPDigestAuth(self.username, self.password),
                 headers=headers,
                 timeout=10
@@ -159,11 +114,11 @@ class Camera:
                     publisher_exists = True
                     logger.info(f"MQTT publisher 'frame_metadata' already exists on {self.ip} with topic {mqtt_topic}")
                     break
-                elif (publisher.get("data_source_key") == "com.axis.analytics_scene_description.v0.beta#1"):
-                    # remove the old publisher if it exists
+                elif (publisher.get("data_source_key") == publisher_key):
+                    # remove the old publisher if it exists with another topic
                     logger.info(f"Removing old publisher with data source key on {self.ip}")
                     delete_response = requests.delete(
-                        f"{base_url}/publishers/{publisher['id']}",
+                        f"{base_url}/{publisher['id']}",
                         auth=HTTPDigestAuth(self.username, self.password),
                         headers=headers,
                         timeout=10
@@ -178,13 +133,13 @@ class Camera:
             if not publisher_exists:
                 payload = {
                     "data": {
-                        "id": "frame_metadata",
-                        "data_source_key": "com.axis.analytics_scene_description.v0.beta#1",
+                        "id": publisher_id,
+                        "data_source_key": publisher_key,
                         "mqtt_topic": mqtt_topic
                     }
                 }
                 response = requests.post(
-                    f"{base_url}/publishers",
+                    f"{base_url}",
                     auth=HTTPDigestAuth(self.username, self.password),
                     json=payload,
                     headers=headers,
@@ -202,19 +157,4 @@ class Camera:
         except Exception as e:
             logger.error(f"Unexpected error: {str(e)}")
         return mqtt_topic
-
-def clear_streams():
-    """Clear all streams in the config file."""
-    config_file = "external/RTSPtoWebRTC/config.json"
-    if os.path.exists(config_file):
-        with open(config_file, "r") as f:
-            config = json.load(f)
-
-        streams = config.get("streams", {})
-        streams = {}
-        config["streams"] = streams
-        with open(config_file, "w") as f:
-            json.dump(config, f, indent=4)
-    else:
-        logger.error("Config file not found")
-        return
+    

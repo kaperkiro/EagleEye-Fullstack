@@ -21,28 +21,16 @@ class MqttClient:
         self._setup_callbacks()
         self.start()
 
-        self.dict_position: Dict[int, List[tuple]] = (
-            {}
-        )  # Camera ID -> [latitude, longitude]
-
     def _setup_callbacks(self) -> None:
         self.client.on_connect = self._on_connect
         self.client.on_message = self._on_message
 
-    def _on_connect(
-        self,
-        client: mqtt.Client,
-        userdata: Any,
-        flags: dict,
-        reason_code: int,
-        properties: Any,
-    ) -> None:
+    def _on_connect(self, client: mqtt.Client, userdata: Any, flags: dict, reason_code: int, properties: Any) -> None:
         logger.info(f"Connected to MQTT broker at {self.broker_host}:{self.broker_port} with result code: %s", reason_code)
         self.subscribe("+/frame_metadata")
+        # self.subscribe("+/consolidated_metadata")
 
-    def _on_message(
-        self, client: mqtt.Client, userdata: Any, msg: mqtt.MQTTMessage
-    ) -> None:
+    def _on_message(self, client: mqtt.Client, userdata: Any, msg: mqtt.MQTTMessage) -> None:
         """Dynamic handling of multiple messages
         Stores all detections in a dictionary and only updates its own view of the data
         """
@@ -55,7 +43,7 @@ class MqttClient:
             self.object_manager.add_observations(camera_id, observations)
 
         except (json.JSONDecodeError, ValueError) as e:
-            print(f"Failed to parse MQTT message: {e}")
+            logger.error(f"Error decoding JSON message: {e}")
 
     def connect(self) -> None:
         self.client.connect(self.broker_host, self.broker_port, self.keepalive)

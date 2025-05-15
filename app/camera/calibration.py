@@ -7,9 +7,9 @@ from tkinter import messagebox
 from PIL import Image, ImageTk
 import numpy as np
 import cv2
-from app.mqtt.broker import BrokerManager
-from app.mqtt.client import MqttClient
+import logging
 
+logger = logging.getLogger(__name__)
 
 # Updated FloorplanGUI class to integrate MQTT
 class Calibration:
@@ -26,7 +26,7 @@ class Calibration:
             )  # Replace with your icon file path
             self.root.iconphoto(True, icon_image)
         except tk.TclError as e:
-            print(f"Failed to set window icon: {e}")
+            logger.error(f"Failed to load icon image: {e}")
 
         # Paths to images (to be loaded)
         self.camera_image_path = None
@@ -551,7 +551,11 @@ class Calibration:
                 )
 
             except Exception as e:
-                print(f"Failed to map point: {str(e)}")
+                logger.error(f"Error mapping coordinates: {e}")
+                self.instruction_label.config(
+                    text="Error mapping coordinates. Check calibration."
+                )
+                continue
 
     def start_tracking(self):
         """Start tracking by continuously processing MQTT data."""

@@ -12,3 +12,4 @@ requests
 netifaces
 scapy
 mac_vendor_lookup
+geopy

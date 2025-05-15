@@ -105,8 +105,7 @@ def scan_axis_cameras(ip_range="192.168.0.0/24", output_file="axis_cameras.json"
         return axis_devices
     
     except Exception as e:
-        print(f"Error: {str(e)}")
-        print("Ensure you have NPCAP (Windows) or root privileges (Linux/macOS).")
+        logger.error(f"Error during ARP scan: {str(e)}. Ensure you have NPCAP (Windows) or root privileges (Linux/macOS).")
         return []
     
 def find_cameras():
