@@ -26,8 +26,9 @@ class MapManager:
         self.file_path = self._get_floor_plan()  # Get the floor plan image file path
         self.camera_relative_coords = {}
         for camera_id, camera_data in self.map_config["cameras"].items():
-            relative_coords = camera_data["pixel_percent"]
-            self.camera_relative_coords[int(camera_id)] = {"x": relative_coords[0], "y": relative_coords[1]}
+            self.camera_relative_coords[int(camera_id)] = {"x": camera_data["pixel_percent"][0], 
+                                                           "y": camera_data["pixel_percent"][1], 
+                                                           "heading": camera_data["heading"]}
 
     def _get_floor_plan(self):
         """Get the floor plan of the map."""
