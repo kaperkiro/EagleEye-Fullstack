@@ -38,6 +38,11 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
   }, [points]);
 
   // Define drawHeatmap early to avoid ReferenceError
+  if (!points || points.length === 0) {
+    console.warn("No points to draw");
+    return null;
+  }
+  
   const drawHeatmap = () => {
     const gl = glRef.current;
     const program = programRef.current;
