@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useFloorPlan } from "./floorPlanProvider";
+import { useFloorPlan } from "./FloorPlanProvider";
 import "../css/HeatMap.css";
 
 // Define the shape of a single heatmap point

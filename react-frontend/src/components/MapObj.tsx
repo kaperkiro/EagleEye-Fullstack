@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useFloorPlan } from "./floorPlanProvider";
+import { useFloorPlan } from "./FloorPlanProvider";
 import { objHistoryMock } from "./MockData";
 import "../css/MapObj.css";
 import cameraIcon from "../assets/camera.png"; // Ensure correct path
@@ -85,7 +85,7 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
   useEffect(() => {
     pollCameras();
     fetchPositionData();
-    const interval = setInterval(fetchPositionData, 100);
+    const interval = setInterval(fetchPositionData, 300);
     return () => clearInterval(interval);
   }, []);
 

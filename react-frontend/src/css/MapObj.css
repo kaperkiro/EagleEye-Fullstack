@@ -17,7 +17,7 @@
   border-radius: 50%;
   border: 2px solid black;
   cursor: pointer;
-  transition: left 0.1s linear, top 0.1s linear; /* Match 100ms polling */
+  transition: left 0.3s linear, top 0.3s linear;
   transform: translate(-50%, -50%);
 }
 

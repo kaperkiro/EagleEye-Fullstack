@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useFloorPlan } from "./floorPlanProvider.tsx";
+import { useFloorPlan } from "./FloorPlanProvider.tsx";
 import "../css/AlarmObj.css";
 
 /**
@@ -60,7 +60,7 @@ export const FloorPlanStaticObjects: React.FC = () => {
     fetchPositionData();
     const interval = setInterval(() => {
       fetchPositionData();
-    }, 100);
+    }, 300);
     // Cleanup interval on component unmount to stop it from iterating.
     return () => clearInterval(interval);
   }, []);
