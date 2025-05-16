@@ -110,6 +110,72 @@ def generate_heatmap_data(counts: np.ndarray, grid_size: int = GRID_SIZE) -> Lis
     return heat
 
 
+def delete_old_obs(
+    filename: str,
+    minutes: int = 1440,  # default to 24 hours
+) -> None:
+    """
+    Remove observations older than `minutes` minutes.
+    If the very last observation in the file is already older than cutoff,
+    we skip the full prune to avoid unnecessary work.
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=minutes)
+
+    # --- Quick check: read only the last non-empty line ---
+    last_line = None
+    if os.path.exists(filename):
+        with open(filename, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.strip():
+                    last_line = line
+    if last_line:
+        try:
+            batch = json.loads(last_line)
+            # assume the batch is ordered oldest→newest, so last element is newest
+            last_obs_ts = parse_observation_timestamp(batch[-1]["timestamp"])
+            if last_obs_ts < cutoff:
+                logger.info(
+                    "Latest observation (%s) is older than cutoff (%s); skipping prune",
+                    last_obs_ts,
+                    cutoff,
+                )
+                return
+        except Exception as e:
+            logger.warning(f"Quick-check failed, proceeding to full prune: {e}")
+
+    # --- Full prune: load each batch, keep only “fresh” obs ---
+    kept_batches = []
+    with open(filename, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                batch = json.loads(line)
+            except json.JSONDecodeError:
+                logger.warning(f"Skipping malformed JSON line: {line}")
+                continue
+
+            fresh = [
+                obs
+                for obs in batch
+                if parse_observation_timestamp(obs["timestamp"]) >= cutoff
+            ]
+            if fresh:
+                kept_batches.append(fresh)
+
+    # --- Overwrite file with only the kept batches ---
+    with open(filename, "w", encoding="utf-8") as f:
+        for batch in kept_batches:
+            f.write(json.dumps(batch) + "\n")
+
+    logger.info(
+        "Pruned observations older than %d minutes; %d batches remain.",
+        minutes,
+        len(kept_batches),
+    )
+
+
 def create_heatmap(
     timeframe_min: int,
     mapmanager,
@@ -127,6 +193,8 @@ def create_heatmap(
     Returns:
         Dictionary with heatmap data for the specified timeframe.
     """
+    delete_old_obs(filename=filename)
+
     if int(timeframe_min) <= 0:
         raise ValueError("timeframe_min must be positive")
 
