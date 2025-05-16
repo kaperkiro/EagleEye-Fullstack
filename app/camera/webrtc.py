@@ -4,15 +4,15 @@ import logging
 import json
 
 logger = logging.getLogger(__name__)
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+CONFIG_FILE = os.path.join(ROOT_DIR, "external", "RTSPtoWebRTC", "config.json")
+
 
 def start_rtsp_to_webrtc():
-    # Locate the project root directory (three levels up) and external folder
     root_dir = os.path.dirname(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     )
-    rtsp_dir = os.path.join(
-        root_dir, "external", "RTSPtoWebRTC"
-    )  # Path to RTSPtoWebRTC
+    rtsp_dir = os.path.join(root_dir, "external", "RTSPtoWebRTC")
 
     # Command to run the Go program
     command = ["go", "run", rtsp_dir]
@@ -27,7 +27,9 @@ def start_rtsp_to_webrtc():
             stderr=subprocess.PIPE,
             text=True,
         )
-        logger.info("RTSPtoWebRTC server started successfully. Preview URL: http://localhost:8083")
+        logger.info(
+            "RTSPtoWebRTC server started successfully. Preview URL: http://localhost:8083"
+        )
 
         for line in process.stdout:  # Read output line by line
             logger.info(line.strip())
@@ -36,12 +38,16 @@ def start_rtsp_to_webrtc():
         process.wait()  # Wait for the process to complete (optional, remove if you want it to run in background)
         if process.returncode not in (0, 1):
             error_output = process.stderr.read()
-            logger.error(f"RTSPtoWebRTC server exited with error: {error_output.strip()}") 
+            logger.error(
+                f"RTSPtoWebRTC server exited with error: {error_output.strip()}"
+            )
 
     except subprocess.CalledProcessError as e:
         logger.error(f"Error starting RTSPtoWebRTC: {e}")
     except FileNotFoundError:
-        logger.error("RTSPtoWebRTC executable not found. Ensure Go is installed and the path is correct.")
+        logger.error(
+            "RTSPtoWebRTC executable not found. Ensure Go is installed and the path is correct."
+        )
     except Exception as e:
         logger.error(f"An unexpected error occurred: {e}")
     except KeyboardInterrupt:
@@ -50,9 +56,13 @@ def start_rtsp_to_webrtc():
         if process:
             process.terminate()
 
-def add_camera_to_config(cam_id, cam_ip, cam_username = "student", cam_password = "student_pass") -> None:
+
+def add_camera_to_config(
+    cam_id, cam_ip, cam_username="student", cam_password="student_pass"
+) -> None:
     """Add the camera dynamically to the config file."""
-    config_file = "external/RTSPtoWebRTC/config.json"
+
+    config_file = CONFIG_FILE
     if os.path.exists(config_file):
         with open(config_file, "r") as f:
             config = json.load(f)
@@ -71,7 +81,8 @@ def add_camera_to_config(cam_id, cam_ip, cam_username = "student", cam_password 
     else:
         logger.error("Config file not found")
         return
-    
+
+
 def clear_streams():
     """Clear all streams in the config file."""
     config_file = "external/RTSPtoWebRTC/config.json"
