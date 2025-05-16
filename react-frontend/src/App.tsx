@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Logo from "./assets/logo.png";
 import LiveViewData from "./components/LiveView";
-import HeatMapData from "./components/HeatMap";
+import HeatMapData from "./components/HeatMap.tsx";
 import LarmData from "./components/Alarms";
 import "./css/App.css";
 import { FloorPlanProvider } from "./components/floorPlanProvider.tsx";

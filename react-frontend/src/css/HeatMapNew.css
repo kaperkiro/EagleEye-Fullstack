@@ -1,24 +1,13 @@
-.heatDiv {
-  display: flex;
-  flex-direction: row;
-  flex: 1;
-}
+/* src/css/HeatMap.css */
 
+/* Sidebar styles */
 .heatLeftSidebar {
-  width: 24.8vw; /*ingen aning om varför just detta funkar?? */
-  border-right: solid 0.22vw black;
+  border-right: solid;
+  width: 24.8vw;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-}
-
-.heatMapDiv {
-  display: flex;
-  flex-direction: row;
-  flex: 1;
-  width: 30vw;
-  height: 85vh;
+  justify-content: center;
 }
 
 .heatMapTitle {
@@ -38,16 +27,38 @@
   font-size: 24px;
   border-radius: 2.5vh;
 }
+
 .heatMapButton:hover {
   background-color: #bab8c6;
   color: #1a202c;
 }
+
 .heatMapButton.active {
   background-color: #3b82f6;
   color: white;
 }
-.floorpPlanDiv {
+
+/* Map styles (aligned with LiveView.css and MapObj.css) */
+.liveViewDiv {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+}
+
+.liveMapDiv {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ObjmapDiv {
   position: relative;
+  flex: 1;
+}
+
+.ObjmapDiv img {
   width: 100%;
   height: 100%;
+  object-fit: contain; /* Match LiveView's default scaling */
 }

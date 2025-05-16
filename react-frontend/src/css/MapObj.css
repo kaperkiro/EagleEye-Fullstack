@@ -12,10 +12,10 @@
 
 .mapButton {
   position: absolute;
-  width: 10px;
-  height: 10px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  border: none;
+  border: 2px solid black;
   cursor: pointer;
   transition: left 0.1s linear, top 0.1s linear; /* Match 100ms polling */
   transform: translate(-50%, -50%);
