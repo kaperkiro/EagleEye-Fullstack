@@ -121,7 +121,6 @@ class Server:
             GET endpoint for retrieving camera positions.
             """
             cameras = self.map_manager.get_camera_relative_positions()
-            print(cameras)
             return jsonify(cameras), 200
 
 
