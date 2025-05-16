@@ -3,10 +3,11 @@ import os
 import time
 import uuid
 from typing import Dict, List
+from geopy.distance import geodesic
 
 from app.alarms.alarm import AlarmManager
-from app.utils.helper import check_if_same_observation
 
+DEFAULT_MAX_DISTANCE = 1.5  # meters
 
 class GlobalObject:
     """Represents an object tracked across multiple cameras with a unique ID."""
@@ -27,13 +28,21 @@ class ObjectManager:
 
     Matches observations to existing objects, uses last known geopositions when missing,
     and archives objects no longer observed.
+
+    Attributes:
+        objects: List of currently tracked GlobalObject instances.
+        history: List of archived GlobalObject instances.
+        map_manager: MapManager instance for coordinate conversions.
+        alarm_manager: AlarmManager instance for triggering alarms.
+        max_distance: Maximum distance (in meters) for matching observations.
     """
 
-    def __init__(self, map_manager, alarm_manager: AlarmManager):
+    def __init__(self, map_manager, alarm_manager: AlarmManager, max_distance: float = 1.5):
         self.objects: List[GlobalObject] = []
         self.history: List[GlobalObject] = []
         self.map_manager = map_manager
         self.alarm_manager = alarm_manager
+        self.max_distance = max_distance # meters
 
     def _prune_history(self) -> None:
         """Remove archived objects older than 15 seconds."""
@@ -96,7 +105,7 @@ class ObjectManager:
 
             # Try to resurrect from history
             for hist_obj in self.history[:]:
-                if check_if_same_observation(hist_obj.observations[-1], observation):
+                if self.check_if_same_observation(hist_obj.observations[-1], observation):
                     if not self._is_valid_geoposition(geoposition):
                         geoposition = self._get_last_geoposition(hist_obj) or geoposition
                         observation["geoposition"] = geoposition
@@ -110,7 +119,7 @@ class ObjectManager:
             else:
                 # Match with existing objects
                 for obj in self.objects:
-                    if check_if_same_observation(obj.observations[-1], observation):
+                    if self.check_if_same_observation(obj.observations[-1], observation):
                         if not self._is_valid_geoposition(geoposition):
                             geoposition = self._get_last_geoposition(obj) or geoposition
                             observation["geoposition"] = geoposition
@@ -128,7 +137,8 @@ class ObjectManager:
                         matched_ids.add(new_obj.id)
                         self._trigger_alarms(geoposition)
                     else:
-                        print(f"Warning: Skipping new observation without valid geoposition: {observation}")
+                        # print(f"Warning: Skipping new observation without valid geoposition: {observation}")
+                        continue
 
         # Archive objects no longer observed by this camera
         for obj_id, obj in prev_seen.items():
@@ -210,7 +220,46 @@ class ObjectManager:
             }
             for obj in self.history
         ]
+    
 
+    def check_if_same_observation(self, obs1: dict, obs2: dict) -> bool:
+        """Checks if two different observations are of the same object.
+        Same if geocoords are max (self.max_distance) m apart and clothing colors match.
+
+        Args:
+            obs1 (dict): First observation.
+            obs2 (dict): Second observation.
+
+        Returns:
+            bool: True if the observations are of the same object, False otherwise.
+        """
+
+        # Get data from observations
+        obs1_class = obs1.get("class", {})
+        obs2_class = obs2.get("class", {})
+
+        if obs1_class.get("type") != obs2_class.get("type"):
+            return False
+
+        # Safely access clothing colors
+        obs1_upper = obs1_class.get("upper_clothing_colors", [{}])[0].get("name", "")
+        obs2_upper = obs2_class.get("upper_clothing_colors", [{}])[0].get("name", "")
+        obs1_lower = obs1_class.get("lower_clothing_colors", [{}])[0].get("name", "")
+        obs2_lower = obs2_class.get("lower_clothing_colors", [{}])[0].get("name", "")
+
+        if obs1_upper != obs2_upper or obs1_lower != obs2_lower:
+            return False
+
+        obs1_coords = obs1.get("geoposition", {})
+        obs2_coords = obs2.get("geoposition", {})
+
+        if geodesic(
+            (obs1_coords.get("latitude", 0), obs1_coords.get("longitude", 0)),
+            (obs2_coords.get("latitude", 0), obs2_coords.get("longitude", 0))
+        ).m > self.max_distance:
+            return False
+
+        return True
 
 def test_global_object():
     # Example usage

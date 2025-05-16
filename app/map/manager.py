@@ -7,7 +7,7 @@ from app.map.map_config_gui import MapConfigGUI
 logger = logging.getLogger(__name__)
 
 class MapManager:
-    def __init__(self, cameras):
+    def __init__(self):
         """Holds the current map used in the frontend to convert to relative xy coordinates
         instead of absolute geocoordinates.
 
