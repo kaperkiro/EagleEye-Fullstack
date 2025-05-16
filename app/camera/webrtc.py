@@ -62,9 +62,8 @@ def add_camera_to_config(
 ) -> None:
     """Add the camera dynamically to the config file."""
 
-    config_file = CONFIG_FILE
-    if os.path.exists(config_file):
-        with open(config_file, "r") as f:
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r") as f:
             config = json.load(f)
 
         streams = config.get("streams", {})
@@ -76,7 +75,7 @@ def add_camera_to_config(
                 "url": f"rtsp://{cam_username}:{cam_password}@{cam_ip}/axis-media/media.amp",
             }
             config["streams"] = streams
-            with open(config_file, "w") as f:
+            with open(CONFIG_FILE, "w") as f:
                 json.dump(config, f, indent=4)
     else:
         logger.error("Config file not found")
@@ -85,15 +84,14 @@ def add_camera_to_config(
 
 def clear_streams():
     """Clear all streams in the config file."""
-    config_file = "external/RTSPtoWebRTC/config.json"
-    if os.path.exists(config_file):
-        with open(config_file, "r") as f:
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r") as f:
             config = json.load(f)
 
         streams = config.get("streams", {})
         streams = {}
         config["streams"] = streams
-        with open(config_file, "w") as f:
+        with open(CONFIG_FILE, "w") as f:
             json.dump(config, f, indent=4)
     else:
         logger.error("Config file not found")
