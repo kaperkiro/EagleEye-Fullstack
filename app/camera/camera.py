@@ -1,160 +1,205 @@
 import json
+import logging
 import os
-import subprocess
+from typing import Dict, Tuple
+
 import requests
 from requests.auth import HTTPDigestAuth
-from ax_devil_device_api import Client, DeviceConfig
+
 from app.camera.webrtc import add_camera_to_config
-import logging
+from ax_devil_device_api import Client, DeviceConfig
 
 logger = logging.getLogger(__name__)
 
 class Camera:
-    """Class to represent a camera and its configuration.
-    Manual configuration with configure_camera() function for now.
+    """Represents a camera with configuration for geocoordinates and MQTT publishing.
 
-    Example usage: cam1 = Camera(...).configure_camera(...)
+    Example usage:
+        camera = Camera(id=1, ip="192.168.0.93")
+        camera.configure_camera(lat=59.3245, lon=18.0705, inst_height=2.5, heading=90)
     """
 
     def __init__(
         self,
         id: int = 1,
-        geocoords: tuple = (0, 0),
+        geocoordinates: Tuple[float, float] = (0.0, 0.0),
         ip: str = "192.168.0.93",
         username: str = "student",
         password: str = "student_pass",
     ):
+        """Initialize camera with ID, IP, and credentials."""
         self.id = id
         self.ip = ip
-        self.geocoords = geocoords
+        self.geocoordinates = geocoordinates
         self.username = username
         self.password = password
-        self.config = (
-            DeviceConfig(self.ip, "student", "student_pass", verify_ssl=False)
+        self.config = DeviceConfig(self.ip, username, password, verify_ssl=False)
+        self._last_settings = self.get_last_settings()
+
+        self._configure_mqtt_publisher(
+            topic=f"{self.id}/frame_metadata",
+            publisher_key="com.axis.analytics_scene_description.v0.beta#1",
         )
-
-        self._configure_mqtt_publisher(mqtt_topic=f"{self.id}/frame_metadata", publisher_key="com.axis.analytics_scene_description.v0.beta#1")
-        # self._configure_mqtt_publisher(mqtt_topic=f"{self.id}/consolidated_metadata", publisher_key="com.axis.consolidated_track.v1.beta#1")
-
         add_camera_to_config(cam_id=self.id, cam_ip=self.ip, cam_username=self.username, cam_password=self.password)
 
     def configure_camera(
         self,
-        lat: float,
-        lon: float,
-        inst_height: float,
-        heading: float,
-        tilt: float = 0,
-        roll: float = 0,
+        lat: float | None = None,
+        lon: float | None = None,
+        inst_height: float | None = None,
+        heading: float | None = None,
+        tilt: float | None = None,
+        roll: float | None = None,
     ) -> None:
-        """Configure the camera settings using curl commands."""
+        """Configure camera geocoordinates and orientation, defaulting to last settings.
+
+        Args:
+            lat: Latitude (degrees), defaults to last known latitude.
+            lon: Longitude (degrees), defaults to last known longitude.
+            inst_height: Camera height (meters), defaults to last known height.
+            heading: Camera heading (degrees), defaults to last known heading.
+            tilt: Camera tilt (degrees), defaults to last known tilt.
+            roll: Camera roll (degrees), defaults to last known roll.
+        """
         with Client(self.config) as client:
-            client.geocoordinates.set_location(
-                lat,
-                lon,
-            )
-            client.geocoordinates.set_orientation(
-                {
-                    "heading": heading,
-                    "tilt": tilt,
-                    "roll": roll,
-                    "installation_height": inst_height,
+            # Use last settings if parameters are None
+            settings = self._last_settings
+            lat = lat if lat is not None else settings["latitude"]
+            lon = lon if lon is not None else settings["longitude"]
+            inst_height = inst_height if inst_height is not None else settings["installation_height"]
+            heading = heading if heading is not None else settings["heading"]
+            tilt = tilt if tilt is not None else settings["tilt"]
+            roll = roll if roll is not None else settings["roll"]
+
+            # Apply settings
+            client.geocoordinates.set_location(lat, lon)
+            client.geocoordinates.set_orientation({
+                "heading": heading,
+                "tilt": tilt,
+                "roll": roll,
+                "installation_height": inst_height,
+            })
+
+            # Update instance state
+            self.geocoordinates = (lat, lon)
+            self._last_settings = {
+                "latitude": lat,
+                "longitude": lon,
+                "installation_height": inst_height,
+                "heading": heading,
+                "tilt": tilt,
+                "roll": roll,
+            }
+
+    def get_last_settings(self) -> Dict[str, float]:
+        """Retrieve current camera settings from the device.
+
+        Returns:
+            Dictionary with latitude, longitude, inst_height, heading, tilt, and roll.
+        """
+        try:
+            with Client(self.config) as client:
+                location = client.geocoordinates.get_location()
+                orientation = client.geocoordinates.get_orientation()
+                return {
+                    "latitude": location["latitude"],
+                    "longitude": location["longitude"],
+                    "installation_height": orientation["installation_height"],
+                    "heading": orientation["heading"],
+                    "tilt": orientation["tilt"],
+                    "roll": orientation["roll"],
                 }
-            )
-            # client.geocoordinates.apply_settings() # Automatically sets roll so dont use!
+        except Exception as e:
+            logger.error(f"Failed to retrieve settings for {self.ip}: {e}")
+            return {
+                "latitude": 0.0,
+                "longitude": 0.0,
+                "installation_height": 0.0,
+                "heading": 0.0,
+                "tilt": 0.0,
+                "roll": 0.0,
+            }
 
-            self.geocoords = (lat, lon)
-
-
-    def save_snapshot(self):
-        """Save a snapshot from the camera."""
-        assets_dir = os.path.dirname(os.path.abspath(__file__))
-        assets_dir = os.path.join(assets_dir, "assets")
-        if not os.path.exists(assets_dir):
-            os.makedirs(assets_dir)
-        os.chdir(assets_dir)
+    def save_snapshot(self) -> None:
+        """Save a snapshot from the camera to assets directory."""
+        assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+        os.makedirs(assets_dir, exist_ok=True)
 
         try:
             response = requests.get(
                 f"http://{self.ip}/axis-cgi/jpg/image.cgi?resolution=1920x1080",
                 auth=HTTPDigestAuth(self.username, self.password),
-                timeout=10
+                timeout=10,
             )
             response.raise_for_status()
-            with open(f"app/assets/{self.id}_snapshot.jpg", "wb") as f:
-                f.write(response.content)
-            logger.info(f"Snapshot saved as {self.id}_snapshot.jpg")
+            snapshot_path = os.path.join(assets_dir, f"{self.id}_snapshot.jpg")
+            with open(snapshot_path, "wb") as file:
+                file.write(response.content)
+            logger.info(f"Snapshot saved as {snapshot_path}")
         except requests.RequestException as e:
-            logger.error(f"Failed to save snapshot for {self.ip}: {str(e)}")
+            logger.error(f"Failed to save snapshot for {self.ip}: {e}")
 
-    def _configure_mqtt_publisher(self, mqtt_topic=None, publisher_key=None):
-        """
-        Check if an MQTT publisher with ID 'frame_metadata' and data source key
-        'com.axis.analytics_scene_description.v0.beta#1' exists. If not, create one.
+    def _configure_mqtt_publisher(self, topic: str, publisher_key: str) -> None:
+        """Configure MQTT publisher if it doesn't exist or has a different topic.
+
+        Args:
+            topic: MQTT topic (e.g., "1/frame_metadata").
+            publisher_key: Data source key (e.g., "com.axis.analytics_scene_description.v0.beta#1").
         """
         base_url = f"http://{self.ip}/config/rest/analytics-mqtt/v1beta/publishers"
         headers = {"accept": "application/json"}
-        publisher_id = mqtt_topic.split("/")[1]
-        
+        publisher_id = topic.split("/")[1]
+
         try:
-            # Step 1: Retrieve existing publishers
+            # Check existing publishers
             response = requests.get(
-                f"{base_url}",
+                base_url,
                 auth=HTTPDigestAuth(self.username, self.password),
                 headers=headers,
-                timeout=10
+                timeout=10,
             )
-
             response.raise_for_status()
             publishers = response.json().get("data", [])
-            
-            publisher_exists = False
+
             for publisher in publishers:
-                if (publisher.get("mqtt_topic") == mqtt_topic):
-                    publisher_exists = True
-                    logger.info(f"MQTT publisher 'frame_metadata' already exists on {self.ip} with topic {mqtt_topic}")
-                    break
-                elif (publisher.get("data_source_key") == publisher_key):
-                    # remove the old publisher if it exists with another topic
-                    logger.info(f"Removing old publisher with data source key on {self.ip}")
-                    delete_response = requests.delete(
+                if publisher.get("mqtt_topic") == topic:
+                    logger.info(f"MQTT publisher '{publisher_id}' exists on {self.ip} with topic {topic}")
+                    return
+                if publisher.get("data_source_key") == publisher_key:
+                    # Remove old publisher with same data source key
+                    response = requests.delete(
                         f"{base_url}/{publisher['id']}",
                         auth=HTTPDigestAuth(self.username, self.password),
                         headers=headers,
-                        timeout=10
+                        timeout=10,
                     )
-                    delete_response.raise_for_status()
-                    if delete_response.json().get("status") == "success":
-                        logger.info(f"Removed old publisher on {self.ip}")
+                    response.raise_for_status()
+                    if response.json().get("status") != "success":
+                        logger.error(f"Failed to remove old publisher on {self.ip}")
                     else:
-                        logger.error(f"Failed to remove old publisher on {self.ip}: {delete_response.text}")
-            
-            # Step 2: Create publisher if it doesn't exist
-            if not publisher_exists:
-                payload = {
-                    "data": {
-                        "id": publisher_id,
-                        "data_source_key": publisher_key,
-                        "mqtt_topic": mqtt_topic
-                    }
+                        logger.info(f"Removed old publisher on {self.ip}")
+
+            # Create new publisher
+            payload = {
+                "data": {
+                    "id": publisher_id,
+                    "data_source_key": publisher_key,
+                    "mqtt_topic": topic,
                 }
-                response = requests.post(
-                    f"{base_url}",
-                    auth=HTTPDigestAuth(self.username, self.password),
-                    json=payload,
-                    headers=headers,
-                    timeout=10
-                )
-                response.raise_for_status()
-                if response.json().get("status") == "success":
-                    logger.info(f"MQTT publisher 'frame_metadata' created successfully on {self.ip} with topic {mqtt_topic}")
-                else:
-                    logger.error(f"Failed to create MQTT publisher on {self.ip}: {response.text}")
+            }
+            response = requests.post(
+                base_url,
+                auth=HTTPDigestAuth(self.username, self.password),
+                json=payload,
+                headers=headers,
+                timeout=10,
+            )
+            response.raise_for_status()
+            if response.json().get("status") == "success":
+                logger.info(f"MQTT publisher '{publisher_id}' created on {self.ip} with topic {topic}")
+            else:
+                logger.error(f"Failed to create MQTT publisher on {self.ip}: {response.text}")
         except requests.RequestException as e:
-            logger.error(f"Failed to configure MQTT publisher on {self.ip}: {str(e)}")
+            logger.error(f"Failed to configure MQTT publisher on {self.ip}: {e}")
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON response from {self.ip}: {str(e)}")
-        except Exception as e:
-            logger.error(f"Unexpected error: {str(e)}")
-        return mqtt_topic
-    
+            logger.error(f"Failed to parse JSON response from {self.ip}: {e}")

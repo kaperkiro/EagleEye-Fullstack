@@ -1,201 +1,206 @@
-# New file for managing global object tracking
-import uuid
-from typing import List, Dict
-from app.utils.helper import check_if_same_observation
-from app.alarms.alarm import AlarmManager
-import time
 import json
 import os
+import time
+import uuid
+from typing import Dict, List
+
+from app.alarms.alarm import AlarmManager
+from app.utils.helper import check_if_same_observation
 
 
 class GlobalObject:
-    """ "Represents a global object observed by multiple cameras.
-    Each object has a unique ID and can have multiple observations from different cameras.
-    """
+    """Represents an object tracked across multiple cameras with a unique ID."""
 
-    def __init__(self, initial_obs: Dict, camera_id: int):
+    def __init__(self, initial_observation: Dict, camera_id: int):
         self.id = str(uuid.uuid4())
-        self.observations: List[Dict] = []
-        self.cameras: set = set()
-        self.add_observation(initial_obs, camera_id)
+        self.observations: List[Dict] = [initial_observation]
+        self.cameras: set = {camera_id}
 
-    def add_observation(self, obs: Dict, camera_id: int):
-        self.observations.append(obs)
+    def add_observation(self, observation: Dict, camera_id: int) -> None:
+        """Add an observation and update associated cameras."""
+        self.observations.append(observation)
         self.cameras.add(camera_id)
 
 
 class ObjectManager:
-    """
-    Manages global object tracking across multiple cameras.
-    Each camera can add observations, and the manager will track the objects
-    Will always check if the observations are the same if the same the are not added.
+    """Manages global object tracking across cameras, handling observations and geopositions.
+
+    Matches observations to existing objects, uses last known geopositions when missing,
+    and archives objects no longer observed.
     """
 
-    def __init__(self, map_manager, alarm_manager):
+    def __init__(self, map_manager, alarm_manager: AlarmManager):
         self.objects: List[GlobalObject] = []
-        # archive of objects no longer in any camera view
         self.history: List[GlobalObject] = []
         self.map_manager = map_manager
         self.alarm_manager = alarm_manager
 
-    def _prune_history(self):
-        """Remove archived objects older than 15 seconds"""
-        now = time.time()
+    def _prune_history(self) -> None:
+        """Remove archived objects older than 15 seconds."""
+        current_time = time.time()
         self.history = [
-            obj
-            for obj in self.history
-            if hasattr(obj, "archived_at") and (now - obj.archived_at) <= 15
+            obj for obj in self.history
+            if hasattr(obj, "archived_at") and (current_time - obj.archived_at) <= 15
         ]
 
-    def save_obj(self, obj):
-        """
-        * saves object to a json file.
-        """
+    def _save_observations(self, observations: List[Dict]) -> None:
+        """Append observations to heatmap_data.jl."""
+        if not observations:
+            return
+        here = os.path.dirname(os.path.abspath(__file__))
+        data_file = os.path.join(here, "heatmap_data.jl")
+        with open(data_file, "a") as file:
+            for observation in observations:
+                file.write(json.dumps(observation, ensure_ascii=False) + "\n")
 
-        def append_json_line(entry: dict):
-            # 1. Get the directory this file lives in:
-            HERE = os.path.dirname(os.path.abspath(__file__))
-            # 2. Build the path to your data file:
-            DATA_FILE = os.path.join(HERE, "heatmap_data.jl")
+    def _is_valid_geoposition(self, geoposition: Dict) -> bool:
+        """Check if geoposition has non-null latitude and longitude."""
+        return (
+            isinstance(geoposition, dict) and
+            geoposition.get("latitude") is not None and
+            geoposition.get("longitude") is not None
+        )
 
-            with open(DATA_FILE, "a") as f:
-                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    def _get_last_geoposition(self, obj: GlobalObject) -> Dict | None:
+        """Retrieve the most recent valid geoposition from an object's observations."""
+        for observation in reversed(obj.observations):
+            if self._is_valid_geoposition(observation.get("geoposition", {})):
+                return observation["geoposition"]
+        return None
 
-        if obj:
-            append_json_line(obj)
+    def _trigger_alarms(self, geoposition: Dict) -> None:
+        """Convert geoposition to relative coordinates and check alarms."""
+        relative_pos = self.map_manager.convert_to_relative(
+            (geoposition["latitude"], geoposition["longitude"])
+        )
+        self.alarm_manager.check_alarms(relative_pos)
 
-    def add_observations(self, camera_id: int, obs_list: List[Dict]) -> None:
-        """Add observations from a camera to the global object list.
-        If the observation is similar to an existing one, it will be added to that object.
+    def add_observations(self, camera_id: int, observations: List[Dict]) -> None:
+        """Add camera observations, matching to existing objects or creating new ones.
+
+        Uses last known geoposition for matched observations lacking valid geoposition.
+        Skips new observations without valid geoposition.
 
         Args:
-            camera_id (int): ID of the camera
-            obs_list (List[Dict]): List of observations from the camera, each represented as a dictionary
+            camera_id: ID of the observing camera.
+            observations: List of observation dictionaries.
         """
-        # list of object to save
-        save_obj_list = []
-        # prune old history entries
         self._prune_history()
-        # track objects previously seen by this camera
-        prev_seen = [obj for obj in self.objects if camera_id in obj.cameras]
+        prev_seen = {obj.id: obj for obj in self.objects if camera_id in obj.cameras}
         matched_ids = set()
-        for obs in obs_list:
+        new_observations = []
 
-            # Check object is trespassing
-            object_pos = None
-            if "geoposition" in obs:
-                object_pos = obs["geoposition"]
-                relative_pos = self.map_manager.convert_to_relative(
-                    (object_pos["latitude"], object_pos["longitude"])
-                )
-                self.alarm_manager.check_alarms(relative_pos)
+        for observation in observations:
+            observation = observation.copy()  # Avoid modifying input
+            geoposition = observation.get("geoposition", {})
 
-            # resurrect archived object if same observation appears
-            resurrected = False
-            for hist_obj in list(self.history):
-                last_hist = hist_obj.observations[-1]
-                if check_if_same_observation(last_hist, obs):
-                    hist_obj.add_observation(obs, camera_id)
-                    matched_ids.add(hist_obj.id)
+            # Try to resurrect from history
+            for hist_obj in self.history[:]:
+                if check_if_same_observation(hist_obj.observations[-1], observation):
+                    if not self._is_valid_geoposition(geoposition):
+                        geoposition = self._get_last_geoposition(hist_obj) or geoposition
+                        observation["geoposition"] = geoposition
+                    hist_obj.add_observation(observation, camera_id)
                     self.history.remove(hist_obj)
                     self.objects.append(hist_obj)
-                    resurrected = True
+                    matched_ids.add(hist_obj.id)
+                    if self._is_valid_geoposition(observation["geoposition"]):
+                        self._trigger_alarms(observation["geoposition"])
                     break
-            if resurrected:
-                continue
-            matched = False
-            for obj in self.objects:
-                last_obs = obj.observations[-1]
-                if check_if_same_observation(last_obs, obs):
-                    obj.add_observation(obs, camera_id)
-                    matched_ids.add(obj.id)
-                    matched = True
-                    break
-            if not matched:
-                save_obj_list.append(obs)
-                globa_obj = GlobalObject(obs, camera_id)
-                self.objects.append(globa_obj)
-                matched_ids.add(self.objects[-1].id)
-        # remove camera from objects no longer observed
-        for obj in prev_seen:
-            if obj.id not in matched_ids:
+            else:
+                # Match with existing objects
+                for obj in self.objects:
+                    if check_if_same_observation(obj.observations[-1], observation):
+                        if not self._is_valid_geoposition(geoposition):
+                            geoposition = self._get_last_geoposition(obj) or geoposition
+                            observation["geoposition"] = geoposition
+                        obj.add_observation(observation, camera_id)
+                        matched_ids.add(obj.id)
+                        if self._is_valid_geoposition(observation["geoposition"]):
+                            self._trigger_alarms(observation["geoposition"])
+                        break
+                else:
+                    # Create new object if geoposition is valid
+                    if self._is_valid_geoposition(geoposition):
+                        new_observations.append(observation)
+                        new_obj = GlobalObject(observation, camera_id)
+                        self.objects.append(new_obj)
+                        matched_ids.add(new_obj.id)
+                        self._trigger_alarms(geoposition)
+                    else:
+                        print(f"Warning: Skipping new observation without valid geoposition: {observation}")
+
+        # Archive objects no longer observed by this camera
+        for obj_id, obj in prev_seen.items():
+            if obj_id not in matched_ids:
                 obj.cameras.discard(camera_id)
-                # if no cameras left, archive object
                 if not obj.cameras:
                     self.objects.remove(obj)
                     obj.archived_at = time.time()
                     self.history.append(obj)
-        self.save_obj(save_obj_list)
+
+        self._save_observations(new_observations)
 
     def get_objects_by_camera(self, camera_id: int) -> List[Dict]:
-        """Get all objects observed by a specific camera.
+        """Get objects observed by a specific camera.
 
         Args:
-            camera_id (int): ID of the camera
+            camera_id: ID of the camera.
 
         Returns:
-            List[Dict]: List of objects observed by the camera, each represented as a dictionary
-            eg [{"id": "1", "class": {...}, "geoposition": {...}, "bounding_box": {...}]
+            List of dictionaries with object ID, class, geoposition, and bounding box.
         """
-        result = []
-        for obj in self.objects:
-            if camera_id in obj.cameras:
-                last_obs = obj.observations[-1]
-                result.append(
-                    {
-                        "id": obj.id,
-                        "class": last_obs.get("class", {}),
-                        "geoposition": last_obs.get("geoposition", {}),
-                        "bounding_box": last_obs.get("bounding_box", {}),
-                    }
-                )
-        return result
+        return [
+            {
+                "id": obj.id,
+                "class": obj.observations[-1].get("class", {}),
+                "geoposition": obj.observations[-1].get("geoposition", {}),
+                "bounding_box": obj.observations[-1].get("bounding_box", {}),
+            }
+            for obj in self.objects
+            if camera_id in obj.cameras
+        ]
 
     def get_all_objects(self) -> List[Dict]:
-        """Returns all cameras and their observations.
-        in the form of [{"camera_id": 1, "id", "geoposition": {...}}]
+        """Get all objects across all cameras.
 
         Returns:
-            List[Dict]: _description_
+            List of dictionaries with camera ID, object ID, and geoposition.
         """
-        result = []
-        for obj in self.objects:
-            for camera_id in obj.cameras:
-                last_obs = obj.observations[-1]
-                result.append(
-                    {
-                        "camera_id": camera_id,
-                        "id": obj.id,
-                        "geoposition": last_obs.get("geoposition", {}),
-                    }
-                )
-        return result
+        return [
+            {
+                "camera_id": camera_id,
+                "id": obj.id,
+                "geoposition": obj.observations[-1].get("geoposition", {}),
+            }
+            for obj in self.objects
+            for camera_id in obj.cameras
+        ]
 
     def get_objects_geoposition(self, camera_id: int) -> List[Dict]:
-        """Get all objects observed by a specific camera with only their geocoordinates.
+        """Get geopositions of objects observed by a specific camera.
 
         Args:
-            camera_id (int): ID of the camera
+            camera_id: ID of the camera.
 
         Returns:
-            List[Dict]: List of objects observed by the camera, each represented as a dictionary
-            eg [{"id": "1", "geoposition": {...}]
+            List of dictionaries with object ID and geoposition.
         """
-        result = []
-        for obj in self.objects:
-            if camera_id in obj.cameras:
-                last_obs = obj.observations[-1]
-                result.append(
-                    {
-                        "id": obj.id,
-                        "geoposition": last_obs.get("geoposition", {}),
-                    }
-                )
-        return result
+        return [
+            {
+                "id": obj.id,
+                "geoposition": obj.observations[-1].get("geoposition", {}),
+            }
+            for obj in self.objects
+            if camera_id in obj.cameras
+        ]
 
     def get_history(self) -> List[Dict]:
-        """Return archived objects no longer in view."""
-        # prune old history entries before returning
+        """Get archived objects no longer in view.
+
+        Returns:
+            List of dictionaries with object ID, observations, and cameras.
+        """
         self._prune_history()
         return [
             {

@@ -111,7 +111,8 @@ class Server:
 
         @app.route("/api/heatmap/<timeframe>", methods=["GET"])
         def get_heatmap(timeframe):
-            payload = create_heatmap(timeframe, self.map_manager)
+            timeframe = int(timeframe)
+            payload = create_heatmap(timeframe, self.map_manager, os.path.join("app", "heatmap", "heatmap_data.json"))
             return jsonify({"heatmap": payload}), 200
         
         @app.route("/api/camera_positions", methods=["GET"])
