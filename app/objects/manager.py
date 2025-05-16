@@ -12,8 +12,6 @@ from app.alarms.alarm import AlarmManager
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MAX_DISTANCE = 1.5  # meters
-
 class GlobalObject:
     """Represents an object tracked across multiple cameras with a unique ID."""
 
@@ -43,13 +41,12 @@ class ObjectManager:
         max_distance: Maximum distance (in meters) for matching observations.
     """
 
-    def __init__(self, map_manager, alarm_manager: AlarmManager, max_distance: float = DEFAULT_MAX_DISTANCE):
+    def __init__(self, map_manager, alarm_manager: AlarmManager):
         """Initialize with map and alarm managers."""
         self.objects: List[GlobalObject] = []
         self.history: List[GlobalObject] = []
         self.map_manager = map_manager
         self.alarm_manager = alarm_manager
-        self.max_distance = max_distance
 
     @staticmethod
     def parse_timestamp(timestamp: str) -> datetime:
@@ -117,7 +114,7 @@ class ObjectManager:
             "bounding_box": 0.05,  # overlap-based
         }
         MAX_TIME_DELTA = 1.0  # Max time difference (seconds)
-        MAX_GEO_DISTANCE = 3.0  # Max geolocation distance (meters)
+        MAX_GEO_DISTANCE = 1.5  # Max geolocation distance (meters)
         MIN_OVERLAP = 0.2  # Minimum overlap for bounding box match
 
         score = 0.0
