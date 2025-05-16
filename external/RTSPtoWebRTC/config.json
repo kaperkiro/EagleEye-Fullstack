@@ -2,5 +2,21 @@
     "server": {
         "http_port": ":8083"
     },
-    "streams": {}
+    "streams": {
+        "1": {
+            "on_demand": false,
+            "disable_audio": true,
+            "url": "rtsp://student:student_pass@192.168.0.93/axis-media/media.amp"
+        },
+        "2": {
+            "on_demand": false,
+            "disable_audio": true,
+            "url": "rtsp://student:student_pass@192.168.0.93/axis-media/media.amp"
+        },
+        "2": {
+            "on_demand": false,
+            "disable_audio": true,
+            "url": "rtsp://student:student_pass@192.168.0.92/axis-media/media.amp"
+        }
+    }
 }

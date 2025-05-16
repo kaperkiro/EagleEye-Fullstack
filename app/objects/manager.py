@@ -5,6 +5,7 @@ from app.utils.helper import check_if_same_observation
 from app.alarms.alarm import AlarmManager
 import time
 import json
+import os
 
 
 class GlobalObject:
@@ -50,8 +51,14 @@ class ObjectManager:
         """
         * saves object to a json file.
         """
+
         def append_json_line(entry: dict):
-            with open("app/heatmap/heatmap_data.jl", "a") as f:
+            # 1. Get the directory this file lives in:
+            HERE = os.path.dirname(os.path.abspath(__file__))
+            # 2. Build the path to your data file:
+            DATA_FILE = os.path.join(HERE, "heatmap_data.jl")
+
+            with open(DATA_FILE, "a") as f:
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
         if obj:

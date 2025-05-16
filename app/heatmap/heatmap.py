@@ -13,17 +13,19 @@ CELL_PCT = 100.0 / GRID_SIZE  # 5.0%
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def parse_observation_timestamp(timestamp: str) -> datetime:
     """Parse UTC timestamp string to datetime object."""
     try:
-        return datetime.fromisoformat(timestamp.rstrip("Z")).replace(tzinfo=timezone.utc)
+        return datetime.fromisoformat(timestamp.rstrip("Z")).replace(
+            tzinfo=timezone.utc
+        )
     except ValueError as e:
         logger.warning(f"Invalid timestamp format: {timestamp}, error: {e}")
         raise
 
-def read_and_filter_observations(
-    filename: str, cutoff: datetime
-) -> List[Dict]:
+
+def read_and_filter_observations(filename: str, cutoff: datetime) -> List[Dict]:
     """Read and filter observations from JSON-Lines file within timeframe."""
     observations = []
     if not os.path.exists(filename):
@@ -52,6 +54,7 @@ def read_and_filter_observations(
         logger.error(f"Error reading file {filename}: {e}")
         raise
     return observations
+
 
 def bin_observations(
     observations: List[Dict], mapmanager, grid_size: int = GRID_SIZE
@@ -85,6 +88,7 @@ def bin_observations(
 
     return counts
 
+
 def generate_heatmap_data(counts: np.ndarray, grid_size: int = GRID_SIZE) -> List[Dict]:
     """Generate heatmap data from binned counts."""
     max_count = counts.max() or 1
@@ -96,17 +100,21 @@ def generate_heatmap_data(counts: np.ndarray, grid_size: int = GRID_SIZE) -> Lis
                 x = x_idx * CELL_PCT + CELL_PCT / 2
                 y = y_idx * CELL_PCT + CELL_PCT / 2
                 intensity = count / max_count
-                heat.append({
-                    "x": round(x, 2),
-                    "y": round(y, 2),
-                    "intensity": round(intensity, 3)
-                })
+                heat.append(
+                    {
+                        "x": round(x, 2),
+                        "y": round(y, 2),
+                        "intensity": round(intensity, 3),
+                    }
+                )
     return heat
+
 
 def create_heatmap(
     timeframe_min: int,
     mapmanager,
-    filename: str = os.path.join("app", "heatmap", "heatmap_data.jl")
+    # filename: str = os.path.join("app", "heatmap", "heatmap_data.jl"),
+    filename="/Users/kacperorzel/projects/skola/axis/Backend-Code/app/objects/heatmap_data.jl",
 ) -> Dict[str, List[Dict]]:
     """
     Generate a heatmap from observations within a given timeframe.
