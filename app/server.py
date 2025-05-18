@@ -15,7 +15,6 @@ class Server:
 
         
         self.app = Flask(__name__)
-        logger.info(f"Starting Flask server...")
         CORS(self.app)
         self.ALARM_FILE = os.path.join("app", "alarms", "alarms.json")
         self.setup_routes()
