@@ -5,9 +5,9 @@ import json
 import math
 from geopy.distance import geodesic
 import os
-import logging
+from app.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("MAP CONFIG")
 
 class MapConfigGUI:
     """Graphical interface for configuring geopositions on a floor plan map.

@@ -3,10 +3,9 @@ from flask_cors import CORS
 from app.heatmap.heatmap import create_heatmap
 import os
 import uuid
+from app.logger import get_logger
 import logging
-import logging
-
-logger = logging.getLogger(__name__)
+logger = get_logger("FLASK SERVER")
 
 class Server:
     def __init__(self, mqtt_client, map_manager, alarm_manager):
@@ -16,7 +15,7 @@ class Server:
 
         
         self.app = Flask(__name__)
-        logging.info(f"Starting Flask server...")
+        logger.info(f"Starting Flask server...")
         CORS(self.app)
         self.ALARM_FILE = os.path.join("app", "alarms", "alarms.json")
         self.setup_routes()
@@ -24,9 +23,9 @@ class Server:
 
     # close server when keyboard interrupt
     def __del__(self):
-        logging.info("Stopping Flask server...")
+        logger.info("Stopping Flask server...")
         self.app.shutdown()
-        logging.info("Flask server stopped.")
+        logger.info("Flask server stopped.")
 
     def setup_routes(self):
         app = self.app
@@ -39,7 +38,7 @@ class Server:
 
             new_alarm["id"] = str(uuid.uuid4())
             self.alarm_manager.add_alarm(new_alarm)
-            logging.info("Saved new alarm zone: %s", new_alarm)
+            logger.info("Saved new alarm zone: %s", new_alarm)
             return (
                 jsonify({"alarm": new_alarm, "message": "Alarm zone saved successfully"}),
                 201,
@@ -48,7 +47,7 @@ class Server:
         @app.route("/api/alarms/<string:alarm_id>", methods=["DELETE"])
         def delete_alarm(alarm_id):
             self.alarm_manager.remove_alarm(alarm_id)
-            logging.info("Removed alarm zone with id: %s", alarm_id)
+            logger.info("Removed alarm zone with id: %s", alarm_id)
             return jsonify({"message": "Alarm zone removed successfully"}), 200
 
         @app.route("/api/alarms", methods=["GET"])
@@ -125,9 +124,8 @@ class Server:
 
 
     def run(self):
-        logging.info("Starting Flask server...")
-        log = logging.getLogger('werkzeug')
-        log.setLevel(logging.ERROR)  # Suppress Flask's default logging
+        logger.info("Starting Flask server...")
+        logging.getLogger('werkzeug').setLevel(logging.ERROR)  # Suppress Flask's default logger
         self.app.run(debug=True, port=5001, use_reloader=False, host="0.0.0.0")
 
 

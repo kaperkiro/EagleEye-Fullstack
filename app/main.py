@@ -10,44 +10,23 @@ from app.map.manager import MapManager
 from app.camera.arp_scan import find_cameras
 from app.alarms.alarm import AlarmManager
 from app.objects.manager import ObjectManager
+from app.logger import get_logger
+logger = get_logger("MAIN")
 
 import threading
-import logging
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(name)s - %(message)s")
 
 class Application:
     def __init__(self):
         self.running = True
 
-        logger = logging.getLogger("Application")
-
-        logger.info("Clearing RTSP to WebRTC config")
+        logger.info("Initializing application")
         clear_streams()
 
-        logger.info("Scanning for cameras")
         self.cameras = find_cameras()
-
-        logger.info("Initializing map manager")
-        self.map_manager = MapManager()
-
-        logger.info("Checking for map config")
-        self.map_config = self.map_manager.load_map_config()
-
-        logger.info("Updating camera configurations")
-        self.update_cameras_configs()
-
-        logger.info("Initializing alarm manager")
+        self.map_manager = MapManager(self.cameras)
         self.alarm_manager = AlarmManager()
-        
-        logger.info("Initializing object manager")
         self.object_manager = ObjectManager(self.map_manager, self.alarm_manager)
-
-        logger.info("Initializing MQTT broker")
         self.broker = BrokerManager()
-
-        logger.info("Initializing MQTT client")
         self.mqtt_client = MqttClient(self.object_manager)
 
         self.webrtc_thread = threading.Thread(target=start_rtsp_to_webrtc, daemon=True)
@@ -55,19 +34,6 @@ class Application:
 
         self.server_thread = threading.Thread(target=Server, args=(self.mqtt_client, self.map_manager, self.alarm_manager), daemon=True)
         self.server_thread.start()
-
-    def update_cameras_configs(self):
-        try:
-            for camera in self.cameras:
-                if str(camera.id) in self.map_config["cameras"]:
-                    cam_settings = self.map_config["cameras"][str(camera.id)]
-                    lat = cam_settings["geocoordinates"][0]
-                    lon = cam_settings["geocoordinates"][1]
-                    height = cam_settings["height"]
-                    heading = cam_settings["heading"]
-                    camera.configure_camera(lat, lon, height, heading)
-        except Exception as e:
-            logger.error(f"Error updating camera configurations: {str(e)}")
 
     def stop_application(self):
         self.running = False

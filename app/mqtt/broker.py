@@ -1,8 +1,8 @@
 import socket
 import subprocess
-import logging
+from app.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("MQTT BROKER")
 
 class BrokerManager:
     def __init__(

@@ -1,8 +1,8 @@
 import json
-import logging
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List
+from app.logger import get_logger
 
 import numpy as np
 
@@ -10,10 +10,8 @@ import numpy as np
 GRID_SIZE = 50
 CELL_PCT = 100.0 / GRID_SIZE  # 2.0%
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
+logger = get_logger("MAIN")
 
 def parse_observation_timestamp(timestamp: str) -> datetime:
     """Parse UTC timestamp string to datetime object.
@@ -33,12 +31,11 @@ def parse_observation_timestamp(timestamp: str) -> datetime:
         logger.warning(f"Invalid timestamp format: {timestamp}, error: {e}")
         raise
 
-
 def read_and_filter_observations(filename: str, cutoff: datetime) -> List[Dict]:
     """Read observations from JSON-Lines file, filtering by cutoff time.
 
     Args:
-        filename: Path to JSON-Lines file.
+        filename: Path to JSON-Lines file containing one observation per line.
         cutoff: Datetime threshold (UTC) for filtering observations.
 
     Returns:
@@ -57,19 +54,18 @@ def read_and_filter_observations(filename: str, cutoff: datetime) -> List[Dict]:
                 if not line.strip():
                     continue
                 try:
-                    batch = json.loads(line)
-                    observations.extend(
-                        obs for obs in batch
-                        if parse_observation_timestamp(obs["timestamp"]) >= cutoff
-                    )
+                    obs = json.loads(line)
+                    if parse_observation_timestamp(obs["timestamp"]) >= cutoff:
+                        observations.append(obs)
                 except json.JSONDecodeError:
                     logger.warning(f"Skipping malformed JSON line: {line.strip()}")
+                except KeyError:
+                    logger.warning(f"Skipping observation without timestamp: {line.strip()}")
     except IOError as e:
         logger.error(f"Error reading file {filename}: {e}")
         raise
 
     return observations
-
 
 def bin_observations(observations: List[Dict], mapmanager, grid_size: int = GRID_SIZE) -> np.ndarray:
     """Bin observations into a grid based on relative coordinates.
@@ -103,7 +99,6 @@ def bin_observations(observations: List[Dict], mapmanager, grid_size: int = GRID
 
     return counts
 
-
 def generate_heatmap_data(counts: np.ndarray, grid_size: int = GRID_SIZE) -> List[Dict]:
     """Generate heatmap data from binned counts.
 
@@ -127,16 +122,15 @@ def generate_heatmap_data(counts: np.ndarray, grid_size: int = GRID_SIZE) -> Lis
 
     return heatmap_data
 
-
 def delete_old_observations(filename: str, minutes: int = 1440) -> None:
     """Prune observations older than specified minutes from JSON-Lines file.
 
     Args:
-        filename: Path to JSON-Lines file.
+        filename: Path to JSON-Lines file containing one observation per line.
         minutes: Age threshold in minutes (default: 1440, i.e., 24 hours).
     """
     cutoff = datetime.now(timezone.utc) - timedelta(minutes=minutes)
-    kept_batches = []
+    kept_observations = []
 
     if os.path.exists(filename):
         try:
@@ -145,27 +139,24 @@ def delete_old_observations(filename: str, minutes: int = 1440) -> None:
                     if not line.strip():
                         continue
                     try:
-                        batch = json.loads(line)
-                        fresh = [
-                            obs for obs in batch
-                            if parse_observation_timestamp(obs["timestamp"]) >= cutoff
-                        ]
-                        if fresh:
-                            kept_batches.append(fresh)
+                        obs = json.loads(line)
+                        if parse_observation_timestamp(obs["timestamp"]) >= cutoff:
+                            kept_observations.append(obs)
                     except json.JSONDecodeError:
                         logger.warning(f"Skipping malformed JSON line: {line.strip()}")
+                    except KeyError:
+                        logger.warning(f"Skipping observation without timestamp: {line.strip()}")
 
             with open(filename, "w", encoding="utf-8") as file:
-                for batch in kept_batches:
-                    file.write(json.dumps(batch) + "\n")
+                for obs in kept_observations:
+                    file.write(json.dumps(obs) + "\n")
 
-            logger.info(f"Pruned observations older than {minutes} minutes; {len(kept_batches)} batches kept")
+            # logger.info(f"Pruned observations older than {minutes} minutes; {len(kept_observations)} observations kept")
         except IOError as e:
             logger.error(f"Error processing file {filename}: {e}")
             raise
     else:
         logger.info(f"File {filename} does not exist; no pruning needed")
-
 
 def create_heatmap(timeframe_min: int, mapmanager, filename: str) -> Dict[str, List[Dict]]:
     """Generate a heatmap from observations within a timeframe.
@@ -173,7 +164,7 @@ def create_heatmap(timeframe_min: int, mapmanager, filename: str) -> Dict[str, L
     Args:
         timeframe_min: Time window in minutes (e.g., 60 for last hour).
         mapmanager: Object with convert_to_relative((lat, lon)) -> (u%, v%) method.
-        filename: Path to JSON-Lines file with observation arrays.
+        filename: Path to JSON-Lines file with observations.
 
     Returns:
         Dictionary with heatmap data (e.g., {"heatmap": [{"x": 1.0, "y": 1.0, "intensity": 0.5}]}).

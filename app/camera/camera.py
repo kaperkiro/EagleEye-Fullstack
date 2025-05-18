@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 from typing import Dict, Tuple
 
@@ -8,8 +7,9 @@ from requests.auth import HTTPDigestAuth
 
 from app.camera.webrtc import add_camera_to_config
 from ax_devil_device_api import Client, DeviceConfig
+from app.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("CAMERA")
 
 class Camera:
     """Represents a camera with configuration for geocoordinates and MQTT publishing.

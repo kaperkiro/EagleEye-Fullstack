@@ -1,9 +1,10 @@
 import paho.mqtt.client as mqtt
 import json
 from typing import List, Dict, Any
+from app.logger import get_logger
 import logging
 
-logger = logging.getLogger(__name__)
+logger = get_logger("MQTT CLIENT")
 
 class MqttClient:
     """MQTT client for receiving and processing messages from a broker.
@@ -18,6 +19,7 @@ class MqttClient:
         self.keepalive = keepalive
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         self.object_manager = object_manager
+        self.first_message_received = False
         self._setup_callbacks()
         self.start()
 
@@ -38,6 +40,10 @@ class MqttClient:
             payload = json.loads(msg.payload.decode())
             observations = payload.get("frame", {}).get("observations", [])
             camera_id = msg.topic.split("/")[0] # Extract camera ID from topic ("cam_id"/frame_metadata)
+
+            if not self.first_message_received:
+                logging.getLogger("MAIN").info("\x1b[32;20m" + "SYSTEM READY!")
+                self.first_message_received = True
 
             # Update global object tracking
             self.object_manager.add_observations(camera_id, observations)

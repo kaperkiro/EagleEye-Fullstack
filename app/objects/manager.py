@@ -5,12 +5,17 @@ import uuid
 from datetime import datetime, timezone
 from typing import Dict, List, Set
 
-import logging
 from geopy.distance import geodesic
 
 from app.alarms.alarm import AlarmManager
+from app.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("CAMERA")
+
+# Configuration for heatmap_data.json write optimization
+BATCH_SIZE = 100  # Number of observations to buffer before writing
+FLUSH_INTERVAL = 5.0  # Seconds between forced buffer flushes
+MIN_HEATMAP_INTERVAL = 0.1  # Minimum seconds between writes per object
 
 class GlobalObject:
     """Represents an object tracked across multiple cameras with a unique ID."""
@@ -20,6 +25,7 @@ class GlobalObject:
         self.id = str(uuid.uuid4())
         self.observations: List[Dict] = [initial_observation]
         self.cameras: Set[int] = {camera_id}
+        self.last_heatmap_write: float = 0.0  # Timestamp of last heatmap write
 
     def add_observation(self, observation: Dict, camera_id: int) -> None:
         """Add an observation and update associated cameras."""
@@ -31,14 +37,16 @@ class ObjectManager:
     """Manages global object tracking across cameras, handling observations and geopositions.
 
     Matches observations to existing objects, uses last known geopositions when missing,
-    and archives objects no longer observed.
+    and archives objects no longer observed. Buffers heatmap observations to reduce disk I/O.
 
     Attributes:
         objects: List of currently tracked GlobalObject instances.
         history: List of archived GlobalObject instances.
         map_manager: MapManager instance for coordinate conversions.
         alarm_manager: AlarmManager instance for triggering alarms.
-        max_distance: Maximum distance (in meters) for matching observations.
+        heatmap_data_file: Path to heatmap data file.
+        _observation_buffer: Buffer for batching heatmap observations.
+        _last_flush_time: Timestamp of last buffer flush.
     """
 
     def __init__(self, map_manager, alarm_manager: AlarmManager):
@@ -47,6 +55,9 @@ class ObjectManager:
         self.history: List[GlobalObject] = []
         self.map_manager = map_manager
         self.alarm_manager = alarm_manager
+        self.heatmap_data_file = os.path.join(os.path.dirname(__file__), "..", "heatmap", "heatmap_data.json")
+        self._observation_buffer: List[Dict] = []
+        self._last_flush_time: float = time.time()
 
     @staticmethod
     def parse_timestamp(timestamp: str) -> datetime:
@@ -73,7 +84,7 @@ class ObjectManager:
             bb2: Second bounding box.
 
         Returns:
-            overlap score [0, 1].
+            Overlap score [0, 1].
         """
         x_left = max(bb1["left"], bb2["left"])
         x_right = min(bb1["right"], bb2["right"])
@@ -111,7 +122,7 @@ class ObjectManager:
             "geoposition": 0.35,  # Most reliable when available
             "class": 0.20,  # Object type
             "colors": 0.15,  # Clothing colors (exact match)
-            "bounding_box": 0.05,  # overlap-based
+            "bounding_box": 0.05,  # Overlap-based
         }
         MAX_TIME_DELTA = 1.0  # Max time difference (seconds)
         MAX_GEO_DISTANCE = 1.5  # Max geolocation distance (meters)
@@ -211,18 +222,48 @@ class ObjectManager:
             if hasattr(obj, "archived_at") and (current_time - obj.archived_at) <= 15
         ]
 
-    def _save_observations(self, observations: List[Dict]) -> None:
-        """Append observations to heatmap_data.json."""
-        if not observations:
+    def _flush_buffer(self) -> None:
+        """Write buffered observations to heatmap_data.json and clear buffer."""
+        if not self._observation_buffer:
             return
-        heatmap_folder = os.path.join(os.path.dirname(__file__), "..", "heatmap")
-        data_file = os.path.join(heatmap_folder, "heatmap_data.json")
+
         try:
-            with open(data_file, "a", encoding="utf-8") as file:
-                for observation in observations:
+            with open(self.heatmap_data_file, "a", encoding="utf-8") as file:
+                for observation in self._observation_buffer:
                     file.write(json.dumps(observation, ensure_ascii=False) + "\n")
+            logger.debug(f"Flushed {len(self._observation_buffer)} observations to {self.heatmap_data_file}")
         except IOError as e:
-            logger.error(f"Error saving observations to {data_file}: {e}")
+            logger.error(f"Error flushing buffer to {self.heatmap_data_file}: {e}")
+        finally:
+            self._observation_buffer.clear()
+            self._last_flush_time = time.time()
+
+    def _save_observations(self, observations: List[Dict], obj: GlobalObject | None = None) -> None:
+        """Buffer observations for heatmap, writing when batch size or time interval is reached.
+
+        Args:
+            observations: List of observation dictionaries.
+            obj: Associated GlobalObject for time-based sampling (optional).
+        """
+        current_time = time.time()
+
+        for observation in observations:
+            # Skip if observation lacks valid geoposition
+            if not self._is_valid_geoposition(observation.get("geoposition", {})):
+                continue
+
+            # Apply time-based sampling if associated with a GlobalObject
+            if obj and (current_time - obj.last_heatmap_write) < MIN_HEATMAP_INTERVAL:
+                continue
+
+            self._observation_buffer.append(observation)
+            if obj:
+                obj.last_heatmap_write = current_time
+
+        # Flush buffer if size or time interval exceeded
+        if (len(self._observation_buffer) >= BATCH_SIZE or
+                (current_time - self._last_flush_time) >= FLUSH_INTERVAL):
+            self._flush_buffer()
 
     def _is_valid_geoposition(self, geoposition: Dict) -> bool:
         """Check if geoposition has non-null latitude and longitude."""
@@ -253,7 +294,7 @@ class ObjectManager:
         """Add camera observations, matching to existing objects or creating new ones.
 
         Uses last known geoposition for matched observations lacking valid geoposition.
-        Skips new observations without valid geoposition.
+        Buffers observations for heatmap with time-based sampling.
 
         Args:
             camera_id: ID of the observing camera.
@@ -280,6 +321,7 @@ class ObjectManager:
                     self.objects.append(hist_obj)
                     matched_ids.add(hist_obj.id)
                     if self._is_valid_geoposition(observation["geoposition"]):
+                        self._save_observations([observation], hist_obj)  # Buffer with sampling
                         self._trigger_alarms(observation["geoposition"])
                     break
             else:
@@ -292,6 +334,7 @@ class ObjectManager:
                         obj.add_observation(observation, camera_id)
                         matched_ids.add(obj.id)
                         if self._is_valid_geoposition(observation["geoposition"]):
+                            self._save_observations([observation], obj)  # Buffer with sampling
                             self._trigger_alarms(observation["geoposition"])
                         break
                 else:
@@ -301,6 +344,7 @@ class ObjectManager:
                         new_obj = GlobalObject(observation, camera_id)
                         self.objects.append(new_obj)
                         matched_ids.add(new_obj.id)
+                        self._save_observations([observation], new_obj)  # Buffer with sampling
                         self._trigger_alarms(geoposition)
                     else:
                         logger.debug(f"Skipping observation without valid geoposition: {observation}")
@@ -315,7 +359,9 @@ class ObjectManager:
                     obj.archived_at = time.time()
                     self.history.append(obj)
 
-        self._save_observations(new_observations)
+        # Flush remaining buffer if new observations were added
+        if new_observations:
+            self._flush_buffer()
 
     def get_objects_by_camera(self, camera_id: int) -> List[Dict]:
         """Get objects observed by a specific camera.
@@ -386,4 +432,7 @@ class ObjectManager:
             }
             for obj in self.history
         ]
-    
+
+    def __del__(self):
+        """Ensure buffer is flushed when ObjectManager is destroyed."""
+        self._flush_buffer()

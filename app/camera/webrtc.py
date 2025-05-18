@@ -1,12 +1,13 @@
 import subprocess
 import os
-import logging
 import json
 
-logger = logging.getLogger(__name__)
+from app.logger import get_logger
+
+logger = get_logger("WEBRTC")
+
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CONFIG_FILE = os.path.join(ROOT_DIR, "external", "RTSPtoWebRTC", "config.json")
-
 
 def start_rtsp_to_webrtc():
     root_dir = os.path.dirname(

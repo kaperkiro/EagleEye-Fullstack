@@ -7,9 +7,9 @@ from tkinter import messagebox
 from PIL import Image, ImageTk
 import numpy as np
 import cv2
-import logging
+from app.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("CALIBRATION")
 
 # Updated FloorplanGUI class to integrate MQTT
 class Calibration:

@@ -1,13 +1,13 @@
 import math
 import os
 import json
-import logging
 from app.map.map_config_gui import MapConfigGUI
+from app.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("MAP MANAGER")
 
 class MapManager:
-    def __init__(self):
+    def __init__(self, cameras):
         """Holds the current map used in the frontend to convert to relative xy coordinates
         instead of absolute geocoordinates.
 
@@ -20,7 +20,10 @@ class MapManager:
             file_path (str): filepath of the image file of the map
             camera_geocoords (dict): dictionary of camera geocoordinates in the format {camera_id: (lat, lon)}
         """
+        self.cameras = cameras
         self.map_config = self.load_map_config()
+        self.update_cameras_configs()
+        
         self.name = self.map_config["name"]
         self.corner_coords = [(lat, lon) for lat, lon in self.map_config["corners"]] # [(lat, lon), ...] in order TL, TR, BR, BL
         self.file_path = self._get_floor_plan()  # Get the floor plan image file path
@@ -80,6 +83,19 @@ class MapManager:
                     return None
         except Exception as e:
             logger.error(f"Error loading map config: {str(e)}")
+
+    def update_cameras_configs(self):
+        try:
+            for camera in self.cameras:
+                if str(camera.id) in self.map_config["cameras"]:
+                    cam_settings = self.map_config["cameras"][str(camera.id)]
+                    lat = cam_settings["geocoordinates"][0]
+                    lon = cam_settings["geocoordinates"][1]
+                    height = cam_settings["height"]
+                    heading = cam_settings["heading"]
+                    camera.configure_camera(lat, lon, height, heading)
+        except Exception as e:
+            logger.error(f"Error updating camera configurations: {str(e)}")
 
     def get_camera_relative_positions(self):
         """Get the camera positions in relative coordinates."""

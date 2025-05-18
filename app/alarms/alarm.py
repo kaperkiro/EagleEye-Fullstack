@@ -1,8 +1,8 @@
 import os
 import json
-import logging
+from app.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("ALARM")
 
 class Alarm:
     def __init__(self, id, topLeft, bottomRight, active, triggered):
@@ -66,15 +66,15 @@ class AlarmManager:
                         self.active_alarms = [alarm for alarm in self.alarms if alarm.active]
                         self.triggered_alarms = [alarm for alarm in self.alarms if alarm.triggered]
             except Exception as e:
-                logging.error(f"Error reading alarms file: {e}")
+                logger.error(f"Error reading alarms file: {e}")
         else:
             self.alarms = []
             self.active_alarms = []
             self.triggered_alarms = []
-            logging.info(f"Alarms file {self.alarm_file} not found. Creating a new one.")
+            logger.info(f"Alarms file {self.alarm_file} not found. Creating a new one.")
             with open(self.alarm_file, "w") as f:
                 json.dump([], f, indent=4)
-                logging.info(f"Created new alarms file: {self.alarm_file}")
+                logger.info(f"Created new alarms file: {self.alarm_file}")
     
     def check_alarms(self, position):
         if not self.active_alarms:
@@ -83,11 +83,11 @@ class AlarmManager:
             if alarm.alarm_contains(position):
                 alarm.trigger_alarm()
                 self.triggered_alarms.append(alarm)
-                logging.info(f"Alarm {alarm.id} triggered by object at {position}")
+                logger.info(f"Alarm {alarm.id} triggered by object at {position}")
                 # Save the alarm to the file
                 with open(self.alarm_file, "w") as f:
                     json.dump([alarm.__dict__ for alarm in self.alarms], f, indent=4)
-                logging.info(f"Saved triggered alarm to {self.alarm_file}")
+                logger.info(f"Saved triggered alarm to {self.alarm_file}")
 
     def get_alarms_file(self):
         """Get the alarms from the file."""
@@ -98,7 +98,7 @@ class AlarmManager:
                 try:
                     alarms = json.load(f)
                 except json.JSONDecodeError:
-                    logging.error(f"Error decoding JSON from {self.alarm_file}")
+                    logger.error(f"Error decoding JSON from {self.alarm_file}")
                     return []
                 return alarms
         else:

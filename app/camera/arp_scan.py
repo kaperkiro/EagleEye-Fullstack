@@ -6,9 +6,9 @@ import json
 from datetime import datetime
 import os
 from app.camera.camera import Camera
-import logging
+from app.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("ARP SCAN")
 
 def get_interface_for_subnet(subnet="192.168.0.0/24"):
     """Find the network interface with an IP in the specified subnet."""
