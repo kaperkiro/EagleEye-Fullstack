@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useFloorPlan } from "./FloorPlanProvider";
 import "../css/HeatMap.css";
 
@@ -16,7 +16,7 @@ interface FloorPlanWithHeatmapProps {
 
 const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
   points,
-  radius = 15,
+  radius = 20,
   colorStops = [
     { offset: 0.0, color: "rgba(0, 0, 255, 0.0)" }, // Transparent blue
     { offset: 0.1, color: "rgba(0, 64, 255, 0.08)" }, // Vivid light blue
@@ -347,10 +347,14 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
   );
 };
 
+
+
 // Parent component that handles fetching & state
 export const HeatMapData: React.FC = () => {
   const [activeIndexHM, setActiveIndex] = React.useState<number>(0);
   const [points, setPoints] = React.useState<HeatmapPoint[]>([]);
+  // Track saving state for loading message
+  const [isLoading, setIsLoading] = useState(false);
 
   React.useEffect(() => {
     handleButtonClick(0);
@@ -360,6 +364,7 @@ export const HeatMapData: React.FC = () => {
     setActiveIndex(index);
     const timeframeMap = [1, 3, 5, 10, 1440];
     const minutes = timeframeMap[index];
+    setIsLoading(true); // Set loading state
 
     fetch(`http://localhost:5001/api/heatmap/${minutes}`, {
       method: "GET",
@@ -367,6 +372,7 @@ export const HeatMapData: React.FC = () => {
     })
       .then((res) => {
         if (!res.ok) throw new Error(`Server responded ${res.status}`);
+        setIsLoading(false); // Clear loading state
         return res.json();
       })
       .then((data: { heatmap: Record<string, HeatmapPoint[]> }) => {
@@ -397,8 +403,25 @@ export const HeatMapData: React.FC = () => {
           )
         )}
       </div>
-      <div className="liveMapDiv">
+      <div className="ObjmapDiv">
         <FloorPlanWithHeatmap points={points} />
+          {isLoading && (
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                backgroundColor: "rgba(0, 0, 0, 0.7)",
+                color: "white",
+                padding: "10px 20px",
+                borderRadius: "5px",
+                zIndex: 10,
+              }}
+            >
+              Loading...
+            </div>
+        )}
       </div>
     </div>
   );

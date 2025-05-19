@@ -31,7 +31,7 @@ export const LarmData = () => {
   // List of finalized alarm zones that include their ID.
   const [alarms, setAlarms] = useState<AlarmZone[]>([]);
   // Track saving state for loading message
-  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Audio ref for alarm sound
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -94,14 +94,14 @@ export const LarmData = () => {
   };
 
   const changeAlarmStatus = (id: string) => {
-    setIsSaving(true);
+    setIsLoading(true);
     fetch(`${BACKEND_URL}/api/alarms/status/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
     })
       .then((response) => {
         if (!response.ok) throw new Error("Failed to update alarm");
-        setIsSaving(false);
+        setIsLoading(false);
         return response.json();
       })
       .then((result) => {
@@ -121,7 +121,7 @@ export const LarmData = () => {
     setAlarms((prev) => [...prev, optimisticAlarm]);
     
     // Set loading state to true
-    setIsSaving(true);
+    setIsLoading(true);
 
     fetch(`${BACKEND_URL}/api/alarms`, {
       method: "POST",
@@ -151,16 +151,16 @@ export const LarmData = () => {
       })
       .finally(() => {
         // Set loading state to false when the request completes (success or failure)
-        setIsSaving(false);
+        setIsLoading(false);
       });
   };
 
   const handleRemoveZone = (id: string) => {
-    setIsSaving(true);
+    setIsLoading(true);
     fetch(`${BACKEND_URL}/api/alarms/${id}`, { method: "DELETE" })
       .then((response) => {
         if (!response.ok) throw new Error("Failed to remove alarm zone");
-        setIsSaving(false);
+        setIsLoading(false);
         return response.json();
       })
       .then(() => {
@@ -243,7 +243,7 @@ export const LarmData = () => {
           <FloorPlanStaticObjects />
 
           {/* Display loading message while saving */}
-          {isSaving && (
+          {isLoading && (
             <div
               style={{
                 position: "absolute",

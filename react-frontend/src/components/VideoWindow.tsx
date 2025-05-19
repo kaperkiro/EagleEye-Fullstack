@@ -33,7 +33,11 @@ const WebRTCStream: React.FC<WebRTCStreamProps> = ({ streamId }) => {
 
     pc.oniceconnectionstatechange = () => {
       console.log("ICE state:", pc.iceConnectionState);
-      setStatus(pc.iceConnectionState);
+        if (pc.iceConnectionState === "connected") {
+          setStatus("");
+        } else {
+          setStatus(pc.iceConnectionState);
+        }
     };
 
     const getCodecInfo = async () => {
