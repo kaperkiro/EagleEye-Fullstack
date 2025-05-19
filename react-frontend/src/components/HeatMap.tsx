@@ -419,7 +419,7 @@ export const HeatMapData: React.FC = () => {
                 zIndex: 10,
               }}
             >
-              Loading...
+              Loading Heatmap...
             </div>
         )}
       </div>

@@ -32,13 +32,26 @@ export const LarmData = () => {
   const [alarms, setAlarms] = useState<AlarmZone[]>([]);
   // Track saving state for loading message
   const [isLoading, setIsLoading] = useState(false);
+  // Track initial fetch loading
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Audio ref for alarm sound
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // Fetch existing alarm zones from the backend when the component mounts.
   useEffect(() => {
-    fetchAlarms();
+    const initialFetch = async () => {
+      try {
+        await fetchAlarms();
+      } catch (err) {
+        console.error("Initial fetch error:", err);
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
+
+    initialFetch();
+
     const intervalId = setInterval(fetchAlarms, 500);
     return () => clearInterval(intervalId);
   }, []);
@@ -101,7 +114,6 @@ export const LarmData = () => {
     })
       .then((response) => {
         if (!response.ok) throw new Error("Failed to update alarm");
-        setIsLoading(false);
         return response.json();
       })
       .then((result) => {
@@ -112,7 +124,8 @@ export const LarmData = () => {
           )
         );
       })
-      .catch((err) => console.error("Error updating alarm:", err));
+      .catch((err) => console.error("Error updating alarm:", err))
+      .finally(() => setIsLoading(false));
   };
 
   const saveAlarmZone = (newAlarm: Omit<AlarmZone, "id">) => {
@@ -120,7 +133,6 @@ export const LarmData = () => {
     const optimisticAlarm: AlarmZone = { ...newAlarm, id: tempId };
     setAlarms((prev) => [...prev, optimisticAlarm]);
     
-    // Set loading state to true
     setIsLoading(true);
 
     fetch(`${BACKEND_URL}/api/alarms`, {
@@ -150,7 +162,6 @@ export const LarmData = () => {
         setAlarms((prev) => prev.filter((alarm) => alarm.id !== tempId));
       })
       .finally(() => {
-        // Set loading state to false when the request completes (success or failure)
         setIsLoading(false);
       });
   };
@@ -160,14 +171,14 @@ export const LarmData = () => {
     fetch(`${BACKEND_URL}/api/alarms/${id}`, { method: "DELETE" })
       .then((response) => {
         if (!response.ok) throw new Error("Failed to remove alarm zone");
-        setIsLoading(false);
         return response.json();
       })
       .then(() => {
         setAlarms((prev) => prev.filter((alarm) => alarm.id !== id));
         console.log("Removed alarm zone with id:", id);
       })
-      .catch((err) => console.error("Error removing alarm zone:", err));
+      .catch((err) => console.error("Error removing alarm zone:", err))
+      .finally(() => setIsLoading(false));
   };
 
   const handleMouseClick = (
@@ -274,6 +285,23 @@ export const LarmData = () => {
                 border: "2px dashed green",
               }}
             />
+          )}
+          {isInitialLoading && (
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                backgroundColor: "rgba(0, 0, 0, 0.7)",
+                color: "white",
+                padding: "10px 20px",
+                borderRadius: "5px",
+                zIndex: 10,
+              }}
+            >
+              Loading Alarms...
+            </div>
           )}
 
           {alarms.map((zone) => (

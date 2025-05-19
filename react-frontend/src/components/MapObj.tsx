@@ -42,6 +42,7 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
 }) => {
   const [cameras, setCameras] = useState<Record<string, Camera>>({});
   const [objects, setObjects] = useState<MapObject[]>([]);
+  const [isLoading, setIsLoading] = useState(true); // Loading state for initial fetch
   const imageUrl = useFloorPlan();
 
   interface ApiResponse {
@@ -82,8 +83,20 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
   };
 
   useEffect(() => {
-    pollCameras();
-    fetchPositionData();
+    // Initial fetch with loading state
+    const initialFetch = async () => {
+      try {
+        await Promise.all([pollCameras(), fetchPositionData()]);
+      } catch (err) {
+        console.error("Initial fetch error:", err);
+      } finally {
+        setIsLoading(false); // Stop loading regardless of success/failure
+      }
+    };
+
+    initialFetch();
+
+    // Set up polling for objects (no loading state for interval)
     const interval = setInterval(fetchPositionData, 300);
     return () => clearInterval(interval);
   }, []);
@@ -201,6 +214,23 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
           />
         );
       })}
+      {isLoading && (
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            color: "white",
+            padding: "10px 20px",
+            borderRadius: "5px",
+            zIndex: 10,
+          }}
+        >
+          Loading Objects...
+        </div>
+      )}
     </div>
   );
 };
