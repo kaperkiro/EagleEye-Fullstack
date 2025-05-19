@@ -231,6 +231,7 @@ export const LarmData = () => {
       <audio ref={audioRef} src={alarmSound} loop preload="auto" />
 
       <div className="alarmLeftSidebar">
+        <h1>Alarm Control</h1>
         <button
           className={`alarmButton ${activeIndexLB === 0 ? "active" : ""}`}
           onClick={() => handleButtonClick(0)}

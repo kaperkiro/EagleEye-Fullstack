@@ -401,7 +401,7 @@ export const HeatMapData: React.FC = () => {
   return (
     <div className="liveViewDiv">
       <div className="heatLeftSidebar">
-        <h1 className="heatMapTitle">Select Timeframe</h1>
+        <h1>Select Timeframe</h1>
         {["Last Hour", "6 Hours", "12 Hours", "18 Hours", "24 Hours"].map(
           (label, i) => (
             <button

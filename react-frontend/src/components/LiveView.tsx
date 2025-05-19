@@ -26,10 +26,13 @@ export const LiveViewData: React.FC = () => {
   return (
     <div className="liveViewDiv">
       <div className="liveLeftSidebar">
+        <h1 className="liveLeftSidebarTitle">Video streams</h1>
         {selectedId != null &&
           activeStreams[selectedId]?.map((streamId) => (
             <VideoWindow key={streamId} streamId={streamId} />
           ))}
+        {Object.keys(activeStreams).length === 0 && 
+        (<p className="liveLeftAltText">No streams selected! Please select a camera or observation...</p>)}
       </div>
       <div className="liveMapDiv">
         <FloorPlanWithObjects
