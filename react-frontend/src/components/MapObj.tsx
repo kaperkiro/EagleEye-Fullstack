@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useFloorPlan } from "./FloorPlanProvider";
-import { objHistoryMock } from "./MockData";
 import "../css/MapObj.css";
 import cameraIcon from "../assets/camera.png"; // Ensure correct path
 
@@ -131,34 +130,45 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
         />
       ) : (
         <div
-          style={{ width: "100%", height: "100%", background: "#eee", zIndex: 0 }}
+          style={{
+            width: "100%",
+            height: "100%",
+            background: "#eee",
+            zIndex: 0,
+          }}
         />
       )}
-
       {/* POV cones and camera icons */}
       <svg
         className="cameraCones"
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
-        style={{ position: "absolute", top:0, left: 0, width: "100%", height: "100%", zIndex: 1 }}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          zIndex: 1,
+        }}
       >
         {Object.entries(cameras).map(([id, coords]) => (
           <polygon
             key={`cone-${id}`}
             points={getConePoints(coords.x, coords.y, coords.heading - 90 || 0)}
-            fill="rgba(0, 128, 255, 0.2)" // Semi-transparent blue
+            fill="rgba(0, 128, 255, 0.2)"
             stroke="rgba(0, 128, 255, 0.3)"
             strokeWidth={0.15}
           />
         ))}
       </svg>
-
       {Object.entries(cameras).map(([id, coords]) => (
         <img
           key={id}
           src={cameraIcon}
           alt={`camera ${id}`}
           className="cameraIcon"
+          onClick={() => onDotClick(parseInt(id, 10), [id])}
           style={{
             top: `${coords.y}%`,
             left: `${coords.x}%`,
@@ -166,10 +176,10 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
             height: "4%",
             marginTop: "-2%",
             marginLeft: "-2.2%",
+            cursor: "pointer",
           }}
         />
       ))}
-
       {/* Moving objects */}
       {objects.map((obj) => {
         const isSelected = obj.id === selectedId;
@@ -191,29 +201,6 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
           />
         );
       })}
-
-      {/* History line for selected object */}
-      {selectedId !== null && objHistoryMock(selectedId).history.length > 0 && (
-        <svg
-          className="blueDots"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-        >
-          <path
-            d={objHistoryMock(selectedId)
-              .history.map((p, i) =>
-                i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`
-              )
-              .join(" ")}
-            fill="none"
-            stroke="#3B82F6"
-            strokeWidth={1}
-            strokeDasharray="1 1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      )}
     </div>
   );
 };

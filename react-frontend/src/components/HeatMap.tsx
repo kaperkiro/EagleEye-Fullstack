@@ -18,18 +18,18 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
   points,
   radius = 15,
   colorStops = [
-    { "offset": 0.0, "color": "rgba(0, 0, 255, 0.0)" },    // Transparent blue
-    { "offset": 0.1, "color": "rgba(0, 64, 255, 0.08)" },  // Vivid light blue
-    { "offset": 0.2, "color": "rgba(0, 128, 255, 0.16)" }, // Bright blue
-    { "offset": 0.3, "color": "rgba(0, 192, 255, 0.24)" }, // Strong cyan
-    { "offset": 0.4, "color": "rgba(0, 255, 192, 0.32)" }, // Vibrant cyan-green
-    { "offset": 0.5, "color": "rgba(0, 255, 128, 0.4)" },  // Bold green
-    { "offset": 0.6, "color": "rgba(128, 255, 0, 0.48)" }, // Bright yellow-green
-    { "offset": 0.7, "color": "rgba(255, 255, 0, 0.56)" }, // Intense yellow
-    { "offset": 0.8, "color": "rgba(255, 192, 0, 0.64)" }, // Vivid orange
-    { "offset": 0.9, "color": "rgba(255, 104, 0, 0.72)" },  // Strong orange-red
-    { "offset": 1.0, "color": "rgba(255, 0, 0, 0.8)" }     // Bold red, opacity 0.8
-],
+    { offset: 0.0, color: "rgba(0, 0, 255, 0.0)" }, // Transparent blue
+    { offset: 0.1, color: "rgba(0, 64, 255, 0.08)" }, // Vivid light blue
+    { offset: 0.2, color: "rgba(0, 128, 255, 0.16)" }, // Bright blue
+    { offset: 0.3, color: "rgba(0, 192, 255, 0.24)" }, // Strong cyan
+    { offset: 0.4, color: "rgba(0, 255, 192, 0.32)" }, // Vibrant cyan-green
+    { offset: 0.5, color: "rgba(0, 255, 128, 0.4)" }, // Bold green
+    { offset: 0.6, color: "rgba(128, 255, 0, 0.48)" }, // Bright yellow-green
+    { offset: 0.7, color: "rgba(255, 255, 0, 0.56)" }, // Intense yellow
+    { offset: 0.8, color: "rgba(255, 192, 0, 0.64)" }, // Vivid orange
+    { offset: 0.9, color: "rgba(255, 104, 0, 0.72)" }, // Strong orange-red
+    { offset: 1.0, color: "rgba(255, 0, 0, 0.8)" }, // Bold red, opacity 0.8
+  ],
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageUrl = useFloorPlan();
@@ -101,7 +101,11 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
         canvas.height = parent.clientHeight;
         gl.viewport(0, 0, canvas.width, canvas.height);
         if (programRef.current) {
-          gl.uniform2f(gl.getUniformLocation(programRef.current, "u_resolution"), canvas.width, canvas.height);
+          gl.uniform2f(
+            gl.getUniformLocation(programRef.current, "u_resolution"),
+            canvas.width,
+            canvas.height
+          );
           drawHeatmap();
         }
       }
@@ -160,8 +164,16 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
     `;
 
     // Compile shaders
-    const vertexShader = compileShader(gl, vertexShaderSource, gl.VERTEX_SHADER);
-    const fragmentShader = compileShader(gl, fragmentShaderSource, gl.FRAGMENT_SHADER);
+    const vertexShader = compileShader(
+      gl,
+      vertexShaderSource,
+      gl.VERTEX_SHADER
+    );
+    const fragmentShader = compileShader(
+      gl,
+      fragmentShaderSource,
+      gl.FRAGMENT_SHADER
+    );
     if (!vertexShader || !fragmentShader) {
       console.error("Shader compilation failed");
       return;
@@ -184,12 +196,7 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
     programRef.current = program;
 
     // Setup quad vertices (full-screen)
-    const vertices = new Float32Array([
-      -1, -1,
-      1, -1,
-      -1, 1,
-      1, 1,
-    ]);
+    const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
     const vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
@@ -203,7 +210,12 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
     const radiusLoc = gl.getUniformLocation(program, "u_radius");
     gl.uniform2f(resolutionLoc, canvas.width, canvas.height);
     gl.uniform1f(radiusLoc, radius);
-    console.log("Resolution:", [canvas.width, canvas.height], "Radius:", radius);
+    console.log(
+      "Resolution:",
+      [canvas.width, canvas.height],
+      "Radius:",
+      radius
+    );
 
     // Setup color stops
     const colorStopColors = colorStops
@@ -213,8 +225,14 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
       })
       .flat();
     const colorStopOffsets = colorStops.map((stop) => stop.offset);
-    gl.uniform4fv(gl.getUniformLocation(program, "u_colorStops"), new Float32Array(colorStopColors));
-    gl.uniform1fv(gl.getUniformLocation(program, "u_colorOffsets"), new Float32Array(colorStopOffsets));
+    gl.uniform4fv(
+      gl.getUniformLocation(program, "u_colorStops"),
+      new Float32Array(colorStopColors)
+    );
+    gl.uniform1fv(
+      gl.getUniformLocation(program, "u_colorOffsets"),
+      new Float32Array(colorStopOffsets)
+    );
     console.log("Color stops:", colorStopColors, "Offsets:", colorStopOffsets);
 
     // Initial draw
@@ -231,7 +249,11 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
   }, [points, radius, colorStops]);
 
   // Helper: Compile shader
-  const compileShader = (gl: WebGLRenderingContext, source: string, type: number) => {
+  const compileShader = (
+    gl: WebGLRenderingContext,
+    source: string,
+    type: number
+  ) => {
     const shader = gl.createShader(type);
     if (!shader) return null;
     gl.shaderSource(shader, source);
@@ -246,7 +268,9 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
 
   // Helper: Parse rgba color string
   const parseColor = (color: string) => {
-    const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+    const match = color.match(
+      /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/
+    );
     if (!match) {
       console.warn("Invalid color format:", color);
       return { r: 0, g: 0, b: 0, a: 1 };
@@ -262,9 +286,20 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
   return (
     <div className="ObjmapDiv">
       {imageUrl ? (
-        <img src={imageUrl} alt="Floor Plan" style={{ width: "100%", height: "100%", zIndex: 0 }} />
+        <img
+          src={imageUrl}
+          alt="Floor Plan"
+          style={{ width: "100%", height: "100%", zIndex: 0 }}
+        />
       ) : (
-        <div style={{ width: "100%", height: "100%", background: "#eee", zIndex: 0 }} />
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            background: "#eee",
+            zIndex: 0,
+          }}
+        />
       )}
       {points && points.length > 0 ? (
         <canvas
@@ -294,13 +329,18 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
             zIndex: 1,
           }}
         >
-          <h1 style={{color: "black", 
-                      fontSize: "2rem", 
-                      background: "white",
-                      borderRadius: "10px",
-                      padding: "10px",
-                      backgroundColor: "rgba(255, 255, 255, 0.81)"}}>
-          No historical data available</h1>
+          <h1
+            style={{
+              color: "black",
+              fontSize: "2rem",
+              background: "white",
+              borderRadius: "10px",
+              padding: "10px",
+              backgroundColor: "rgba(255, 255, 255, 0.81)",
+            }}
+          >
+            No historical data available
+          </h1>
         </div>
       )}
     </div>
@@ -345,15 +385,17 @@ export const HeatMapData: React.FC = () => {
     <div className="liveViewDiv">
       <div className="heatLeftSidebar">
         <h1 className="heatMapTitle">Select Timeframe</h1>
-        {["Last Hour", "6 Hours", "12 Hours", "18 Hours", "24 Hours"].map((label, i) => (
-          <button
-            key={i}
-            className={`heatMapButton ${activeIndexHM === i ? "active" : ""}`}
-            onClick={() => handleButtonClick(i)}
-          >
-            {label}
-          </button>
-        ))}
+        {["Last Hour", "6 Hours", "12 Hours", "18 Hours", "24 Hours"].map(
+          (label, i) => (
+            <button
+              key={i}
+              className={`heatMapButton ${activeIndexHM === i ? "active" : ""}`}
+              onClick={() => handleButtonClick(i)}
+            >
+              {label}
+            </button>
+          )
+        )}
       </div>
       <div className="liveMapDiv">
         <FloorPlanWithHeatmap points={points} />

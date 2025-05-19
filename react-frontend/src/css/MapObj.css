@@ -12,8 +12,8 @@
 
 .mapButton {
   position: absolute;
-  width: 18px;
-  height: 18px;
+  width: 1.7vh;
+  height: 1.7vh;
   border-radius: 50%;
   border: 2px solid black;
   cursor: pointer;
