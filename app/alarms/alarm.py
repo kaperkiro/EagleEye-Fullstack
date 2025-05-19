@@ -98,10 +98,7 @@ class AlarmManager:
                 try:
                     alarms = json.load(f)
                 except json.JSONDecodeError:
-                    if os.path.getsize(self.alarm_file) > 0:
-                        logger.warning(f"Alarm file {self.alarm_file} is empty.")
-                    else:
-                        logger.error(f"Error decoding JSON from {self.alarm_file}")
+                    logger.warning(f"Alarm file {self.alarm_file} is empty.")
                     return []
                 return alarms
         else:
