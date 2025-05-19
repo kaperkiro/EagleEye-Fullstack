@@ -4,7 +4,7 @@ import LiveViewData from "./components/LiveView";
 import HeatMapData from "./components/HeatMap.tsx";
 import LarmData from "./components/Alarms";
 import "./css/App.css";
-import { FloorPlanProvider } from "./components/floorPlanProvider.tsx";
+import { FloorPlanProvider } from "./components/FloorPlanProvider.tsx";
 
 /**
  * Main application for the frontend
@@ -54,7 +54,7 @@ function App() {
               className={`toggle-button ${activeIndex === 1 ? "active" : ""}`}
               onClick={() => handleButtonClick(1)}
             >
-              <p className="buttonText">Heatmap</p>
+              <p className="buttonText">Historical</p>
             </button>
             <button
               className={`toggle-button ${activeIndex === 2 ? "active" : ""}`}

@@ -96,7 +96,7 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
 
   // Calculate POV cone points (isosceles triangle)
   const getConePoints = (x: number, y: number, heading: number) => {
-    const radius = 10; // Cone length in % (adjust as needed)
+    const radius = 20; // Cone length in % (adjust as needed)
     const fov = 90; // Field of view in degrees
     const halfFov = fov / 2;
 

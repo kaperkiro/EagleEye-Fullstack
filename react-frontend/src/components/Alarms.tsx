@@ -27,22 +27,19 @@ export const LarmData = () => {
   // The starting point for a new zone.
   const [zoneStart, setZoneStart] = useState<Point | null>(null);
   // A draft zone drawn while moving the mouse. Note: Excludes the id.
-  const [draftZone, setDraftZone] = useState<Omit<AlarmZone, "id"> | null>(
-    null
-  );
+  const [draftZone, setDraftZone] = useState<Omit<AlarmZone, "id"> | null>(null);
   // List of finalized alarm zones that include their ID.
   const [alarms, setAlarms] = useState<AlarmZone[]>([]);
+  // Track saving state for loading message
+  const [isSaving, setIsSaving] = useState(false);
 
   // Audio ref for alarm sound
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // Fetch existing alarm zones from the backend when the component mounts.
   useEffect(() => {
-    // Fetch immediately, then every 100ms
     fetchAlarms();
-    const intervalId = setInterval(fetchAlarms, 100);
-
-    // Cleanup on unmount
+    const intervalId = setInterval(fetchAlarms, 500);
     return () => clearInterval(intervalId);
   }, []);
 
@@ -60,10 +57,6 @@ export const LarmData = () => {
     }
   }, [alarms]);
 
-  /**
-   * API call for all Alarms.
-   * gets the list of alarms
-   */
   const fetchAlarms = async () => {
     try {
       const res = await fetch(`${BACKEND_URL}/api/alarms`);
@@ -72,7 +65,13 @@ export const LarmData = () => {
       }
       const data = await res.json();
       if (data.alarms) {
-        setAlarms(data.alarms);
+        setAlarms((prev) => {
+          const optimisticAlarms = prev.filter((alarm) =>
+            alarm.id.startsWith("temp-")
+          );
+          const backendAlarms = data.alarms;
+          return [...backendAlarms, ...optimisticAlarms];
+        });
         console.log("Loaded alarms from backend:", data.alarms);
       }
     } catch (err) {
@@ -80,7 +79,6 @@ export const LarmData = () => {
     }
   };
 
-  // Handle switching modes. If leaving Add Zone mode, clear drawing state.
   const handleButtonClick = (index: number) => {
     setActiveIndex(index);
     if (index !== 0) {
@@ -89,7 +87,6 @@ export const LarmData = () => {
     }
   };
 
-  // Compute an AlarmZone from two points without generating an ID.
   const calculateAlarmZone = (p1: Point, p2: Point): Omit<AlarmZone, "id"> => {
     const topLeft = { x: Math.min(p1.x, p2.x), y: Math.min(p1.y, p2.y) };
     const bottomRight = { x: Math.max(p1.x, p2.x), y: Math.max(p1.y, p2.y) };
@@ -97,12 +94,14 @@ export const LarmData = () => {
   };
 
   const changeAlarmStatus = (id: string) => {
+    setIsSaving(true);
     fetch(`${BACKEND_URL}/api/alarms/status/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
     })
       .then((response) => {
         if (!response.ok) throw new Error("Failed to update alarm");
+        setIsSaving(false);
         return response.json();
       })
       .then((result) => {
@@ -116,31 +115,52 @@ export const LarmData = () => {
       .catch((err) => console.error("Error updating alarm:", err));
   };
 
-  // Save a new alarm zone via a POST call to the backend.
   const saveAlarmZone = (newAlarm: Omit<AlarmZone, "id">) => {
+    const tempId = `temp-${Date.now()}`;
+    const optimisticAlarm: AlarmZone = { ...newAlarm, id: tempId };
+    setAlarms((prev) => [...prev, optimisticAlarm]);
+    
+    // Set loading state to true
+    setIsSaving(true);
+
     fetch(`${BACKEND_URL}/api/alarms`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newAlarm),
     })
       .then((response) => {
-        if (!response.ok) throw new Error("Failed to save alarm zone");
+        if (!response.ok) {
+          setAlarms((prev) => prev.filter((alarm) => alarm.id !== tempId));
+          throw new Error("Failed to save alarm zone");
+        }
         return response.json();
       })
       .then((data) => {
         if (data.alarm) {
-          setAlarms((prev) => [...prev, data.alarm]);
+          setAlarms((prev) =>
+            prev.map((alarm) =>
+              alarm.id === tempId ? data.alarm : alarm
+            )
+          );
           console.log("Saved new alarm zone:", data.alarm);
         }
       })
-      .catch((err) => console.error("Error saving alarm zone:", err));
+      .catch((err) => {
+        console.error("Error saving alarm zone:", err);
+        setAlarms((prev) => prev.filter((alarm) => alarm.id !== tempId));
+      })
+      .finally(() => {
+        // Set loading state to false when the request completes (success or failure)
+        setIsSaving(false);
+      });
   };
 
-  // Remove an alarm zone via a DELETE call to the backend.
   const handleRemoveZone = (id: string) => {
+    setIsSaving(true);
     fetch(`${BACKEND_URL}/api/alarms/${id}`, { method: "DELETE" })
       .then((response) => {
         if (!response.ok) throw new Error("Failed to remove alarm zone");
+        setIsSaving(false);
         return response.json();
       })
       .then(() => {
@@ -150,7 +170,6 @@ export const LarmData = () => {
       .catch((err) => console.error("Error removing alarm zone:", err));
   };
 
-  // Handle left-click events for Add Zone mode.
   const handleMouseClick = (
     e: React.MouseEvent<HTMLDivElement, MouseEvent>
   ) => {
@@ -170,7 +189,6 @@ export const LarmData = () => {
     }
   };
 
-  // Update the draft zone dynamically as the mouse moves.
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (activeIndexLB !== 0 || !zoneStart) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -181,7 +199,6 @@ export const LarmData = () => {
     setDraftZone(calculateAlarmZone(zoneStart, point));
   };
 
-  // Right-click cancels the current draft.
   const handleContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
     if (activeIndexLB === 0 && zoneStart) {
       e.preventDefault();
@@ -192,11 +209,9 @@ export const LarmData = () => {
 
   return (
     <div className="alarmsDiv">
-      {/* Alarm sound element */}
       <audio ref={audioRef} src={alarmSound} loop preload="auto" />
 
       <div className="alarmLeftSidebar">
-        {/* Sidebar buttons */}
         <button
           className={`alarmButton ${activeIndexLB === 0 ? "active" : ""}`}
           onClick={() => handleButtonClick(0)}
@@ -216,6 +231,7 @@ export const LarmData = () => {
           Zone Status
         </button>
       </div>
+
       <div className="mapDiv">
         <div
           className="mapDiv2"
@@ -226,7 +242,25 @@ export const LarmData = () => {
         >
           <FloorPlanStaticObjects />
 
-          {/* Draft zone while drawing */}
+          {/* Display loading message while saving */}
+          {isSaving && (
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                backgroundColor: "rgba(0, 0, 0, 0.7)",
+                color: "white",
+                padding: "10px 20px",
+                borderRadius: "5px",
+                zIndex: 10,
+              }}
+            >
+              Loading...
+            </div>
+          )}
+
           {draftZone && (
             <div
               style={{
@@ -242,7 +276,6 @@ export const LarmData = () => {
             />
           )}
 
-          {/* Render alarm zones */}
           {alarms.map((zone) => (
             <div
               key={zone.id}
@@ -257,6 +290,8 @@ export const LarmData = () => {
                   : undefined
               }
               className={`alarmZone ${
+                zone.id.startsWith("temp-") ? "temp" : ""
+              } ${
                 zone.triggered
                   ? "blinking"
                   : zone.active
