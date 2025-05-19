@@ -37,12 +37,6 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
   const programRef = useRef<WebGLProgram | null>(null);
   const pointsBufferRef = useRef<Float32Array | null>(null);
 
-  // Log points for debugging
-  useEffect(() => {
-    console.log("Points:", points);
-    console.log("Points count:", points.length);
-  }, [points]);
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -233,7 +227,6 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
       gl.getUniformLocation(program, "u_colorOffsets"),
       new Float32Array(colorStopOffsets)
     );
-    console.log("Color stops:", colorStopColors, "Offsets:", colorStopOffsets);
 
     // Initial draw
     resizeCanvas();
@@ -347,44 +340,62 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
   );
 };
 
-
-
 // Parent component that handles fetching & state
 export const HeatMapData: React.FC = () => {
-  const [activeIndexHM, setActiveIndex] = React.useState<number>(0);
-  const [points, setPoints] = React.useState<HeatmapPoint[]>([]);
-  // Track saving state for loading message
-  const [isLoading, setIsLoading] = useState(false);
+  const [activeIndexHM, setActiveIndex] = useState<number>(0);
+  const [points, setPoints] = useState<HeatmapPoint[]>([]);
+  const [isLoading, setIsLoading] = useState(false); // Loading for button clicks
+  const [isInitialLoading, setIsInitialLoading] = useState(true); // Initial fetch loading
+  const [fetchInterval, setFetchInterval] = useState(5000); // Dynamic fetch interval
 
-  React.useEffect(() => {
-    handleButtonClick(0);
-  }, []);
+  const fetchHeatmap = async (minutes: number) => {
+    try {
+      const res = await fetch(`http://localhost:5001/api/heatmap/${minutes}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) throw new Error(`Server responded ${res.status}`);
+      const data: { heatmap: Record<string, HeatmapPoint[]> } = await res.json();
+      const map = data.heatmap;
+      const firstKey = Object.keys(map)[0];
+      const newPoints = map[firstKey] || [];
+      setPoints(newPoints);
+      // Adjust fetch interval based on points presence
+      setFetchInterval(newPoints.length > 0 ? 5000 : 10000);
+      if (newPoints.length > 0) {
+        console.log("Fetched heatmap points:", newPoints);
+      } else {
+        console.log("No heatmap points found, slowing fetch interval to 10000ms");
+      }
+    } catch (err) {
+      console.error("Heatmap fetch error:", err);
+      setPoints([]);
+      setFetchInterval(10000);
+    }
+  };
+
+  useEffect(() => {
+    const initialFetch = async () => {
+      try {
+        await fetchHeatmap([1, 3, 5, 10, 1440][activeIndexHM]);
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
+
+    initialFetch();
+
+    const intervalId = setInterval(
+      () => fetchHeatmap([1, 3, 5, 10, 1440][activeIndexHM]),
+      fetchInterval
+    );
+    return () => clearInterval(intervalId);
+  }, [activeIndexHM, fetchInterval]);
 
   const handleButtonClick = (index: number) => {
     setActiveIndex(index);
-    const timeframeMap = [1, 3, 5, 10, 1440];
-    const minutes = timeframeMap[index];
-    setIsLoading(true); // Set loading state
-
-    fetch(`http://localhost:5001/api/heatmap/${minutes}`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error(`Server responded ${res.status}`);
-        setIsLoading(false); // Clear loading state
-        return res.json();
-      })
-      .then((data: { heatmap: Record<string, HeatmapPoint[]> }) => {
-        const map = data.heatmap;
-        const firstKey = Object.keys(map)[0];
-        const newPoints = map[firstKey] || []; // Fallback to empty array if undefined
-        setPoints(newPoints);
-      })
-      .catch((err) => {
-        console.error("Heatmap fetch error:", err);
-        setPoints([]); // Set empty array on error
-      });
+    setIsLoading(true);
+    fetchHeatmap([1, 3, 5, 10, 1440][index]).finally(() => setIsLoading(false));
   };
 
   return (
@@ -405,22 +416,39 @@ export const HeatMapData: React.FC = () => {
       </div>
       <div className="ObjmapDiv">
         <FloorPlanWithHeatmap points={points} />
-          {isLoading && (
-            <div
-              style={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                backgroundColor: "rgba(0, 0, 0, 0.7)",
-                color: "white",
-                padding: "10px 20px",
-                borderRadius: "5px",
-                zIndex: 10,
-              }}
-            >
-              Loading Heatmap...
-            </div>
+        {isInitialLoading && (
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              backgroundColor: "rgba(0, 0, 0, 0.7)",
+              color: "white",
+              padding: "10px 20px",
+              borderRadius: "5px",
+              zIndex: 10,
+            }}
+          >
+            Loading Heatmap...
+          </div>
+        )}
+        {isLoading && (
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              backgroundColor: "rgba(0, 0, 0, 0.7)",
+              color: "white",
+              padding: "10px 20px",
+              borderRadius: "5px",
+              zIndex: 10,
+            }}
+          >
+            Loading Heatmap...
+          </div>
         )}
       </div>
     </div>

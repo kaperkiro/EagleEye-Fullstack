@@ -34,6 +34,8 @@ export const LarmData = () => {
   const [isLoading, setIsLoading] = useState(false);
   // Track initial fetch loading
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  // Control fetch interval (500ms when alarms exist, 5000ms when none)
+  const [fetchInterval, setFetchInterval] = useState(500);
 
   // Audio ref for alarm sound
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -52,9 +54,9 @@ export const LarmData = () => {
 
     initialFetch();
 
-    const intervalId = setInterval(fetchAlarms, 500);
+    const intervalId = setInterval(fetchAlarms, fetchInterval);
     return () => clearInterval(intervalId);
-  }, []);
+  }, [fetchInterval]); // Re-run when fetchInterval changes
 
   // Play/pause alarm sound when any zone is triggered
   useEffect(() => {
@@ -83,9 +85,15 @@ export const LarmData = () => {
             alarm.id.startsWith("temp-")
           );
           const backendAlarms = data.alarms;
+          // Adjust fetch interval based on alarms presence
+          setFetchInterval(backendAlarms.length > 0 ? 500 : 5000);
+          if (backendAlarms.length > 0) {
+            console.log("Fetched alarms:", backendAlarms);
+          } else {
+            console.log("No alarms found, slowing fetch interval to 5000ms");
+          }
           return [...backendAlarms, ...optimisticAlarms];
         });
-        console.log("Loaded alarms from backend:", data.alarms);
       }
     } catch (err) {
       console.error("Error fetching alarms:", err);
@@ -253,7 +261,26 @@ export const LarmData = () => {
         >
           <FloorPlanStaticObjects />
 
-          {/* Display loading message while saving */}
+          {/* Initial loading indicator */}
+          {isInitialLoading && (
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                backgroundColor: "rgba(0, 0, 0, 0.7)",
+                color: "white",
+                padding: "10px 20px",
+                borderRadius: "5px",
+                zIndex: 10,
+              }}
+            >
+              Loading Alarms...
+            </div>
+          )}
+
+          {/* Saving/deleting loading indicator */}
           {isLoading && (
             <div
               style={{
@@ -285,23 +312,6 @@ export const LarmData = () => {
                 border: "2px dashed green",
               }}
             />
-          )}
-          {isInitialLoading && (
-            <div
-              style={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                backgroundColor: "rgba(0, 0, 0, 0.7)",
-                color: "white",
-                padding: "10px 20px",
-                borderRadius: "5px",
-                zIndex: 10,
-              }}
-            >
-              Loading Alarms...
-            </div>
           )}
 
           {alarms.map((zone) => (

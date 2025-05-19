@@ -43,6 +43,7 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
   const [cameras, setCameras] = useState<Record<string, Camera>>({});
   const [objects, setObjects] = useState<MapObject[]>([]);
   const [isLoading, setIsLoading] = useState(true); // Loading state for initial fetch
+  const [fetchInterval, setFetchInterval] = useState(300); // Dynamic fetch interval
   const imageUrl = useFloorPlan();
 
   interface ApiResponse {
@@ -68,6 +69,13 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
         cId: [o.cid],
       }));
       setObjects(mapped);
+      // Adjust fetch interval based on objects presence
+      setFetchInterval(mapped.length > 0 ? 300 : 1000);
+      if (mapped.length > 0) {
+        console.log("Fetched objects:", mapped);
+      } else {
+        console.log("No objects found, slowing fetch interval to 1000ms");
+      }
     } catch (err) {
       console.error("fetchPositionData error:", err);
     }
@@ -90,16 +98,16 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
       } catch (err) {
         console.error("Initial fetch error:", err);
       } finally {
-        setIsLoading(false); // Stop loading regardless of success/failure
+        setIsLoading(false);
       }
     };
 
     initialFetch();
 
-    // Set up polling for objects (no loading state for interval)
-    const interval = setInterval(fetchPositionData, 300);
+    // Set up polling for objects
+    const interval = setInterval(fetchPositionData, fetchInterval);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchInterval]); // Re-run when fetchInterval changes
 
   useEffect(() => {
     console.log("Cameras state:", cameras);
