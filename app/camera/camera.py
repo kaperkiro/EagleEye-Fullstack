@@ -80,6 +80,8 @@ class Camera:
                 "installation_height": inst_height,
             })
 
+            logger.info(f"Configured camera {self.id} at {self.ip} with settings:\n\t\t\t| lat: {lat}, lng: {lon}, height: {inst_height}, heading: {heading}, tilt: {tilt}, roll: {roll}")
+
             # Update instance state
             self.geocoordinates = (lat, lon)
             self._last_settings = {
