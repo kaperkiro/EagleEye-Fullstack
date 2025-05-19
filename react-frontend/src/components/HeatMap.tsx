@@ -16,14 +16,20 @@ interface FloorPlanWithHeatmapProps {
 
 const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
   points,
-  radius = 20,
+  radius = 15,
   colorStops = [
-    { offset: 0.0, color: "rgba(0, 0, 255, 0)" }, // Transparent blue
-    { offset: 0.2, color: "rgba(0, 0, 255, 0.3)" }, // Blue
-    { offset: 0.4, color: "rgba(0, 255, 0, 0.5)" }, // Green
-    { offset: 0.6, color: "rgba(255, 255, 0, 0.7)" }, // Yellow
-    { offset: 1.0, color: "rgba(255, 0, 0, 0.9)" }, // Red
-  ],
+    { "offset": 0.0, "color": "rgba(0, 0, 255, 0.0)" },    // Transparent blue
+    { "offset": 0.1, "color": "rgba(0, 64, 255, 0.08)" },  // Vivid light blue
+    { "offset": 0.2, "color": "rgba(0, 128, 255, 0.16)" }, // Bright blue
+    { "offset": 0.3, "color": "rgba(0, 192, 255, 0.24)" }, // Strong cyan
+    { "offset": 0.4, "color": "rgba(0, 255, 192, 0.32)" }, // Vibrant cyan-green
+    { "offset": 0.5, "color": "rgba(0, 255, 128, 0.4)" },  // Bold green
+    { "offset": 0.6, "color": "rgba(128, 255, 0, 0.48)" }, // Bright yellow-green
+    { "offset": 0.7, "color": "rgba(255, 255, 0, 0.56)" }, // Intense yellow
+    { "offset": 0.8, "color": "rgba(255, 192, 0, 0.64)" }, // Vivid orange
+    { "offset": 0.9, "color": "rgba(255, 104, 0, 0.72)" },  // Strong orange-red
+    { "offset": 1.0, "color": "rgba(255, 0, 0, 0.8)" }     // Bold red, opacity 0.8
+],
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageUrl = useFloorPlan();
