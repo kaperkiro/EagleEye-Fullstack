@@ -341,8 +341,22 @@ export const LarmData = () => {
                 top: `${zone.topLeft.y}%`,
                 width: `${zone.bottomRight.x - zone.topLeft.x}%`,
                 height: `${zone.bottomRight.y - zone.topLeft.y}%`,
+                position: "absolute",
               }}
-            />
+              >
+              <span
+                style={{
+                  color: !zone.active ? "gray" : zone.triggered ? "red" : "green",
+                  fontWeight: "bold",
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                }}
+              >
+              {!zone.active ? "Inactive" : zone.triggered ? "Triggered" : "Active"}
+              </span>
+            </div>
           ))}
         </div>
       </div>
