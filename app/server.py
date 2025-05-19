@@ -28,7 +28,7 @@ class Server:
 
     def setup_routes(self):
         app = self.app
-
+    
         @app.route("/api/alarms", methods=["POST"])
         def create_alarm_zone():
             new_alarm = request.get_json()
@@ -37,7 +37,7 @@ class Server:
 
             new_alarm["id"] = str(uuid.uuid4())
             self.alarm_manager.add_alarm(new_alarm)
-            logger.info("Saved new alarm zone: %s", new_alarm)
+            logger.info("Saved new alarm zone: %s", new_alarm.get("id"))
             return (
                 jsonify({"alarm": new_alarm, "message": "Alarm zone saved successfully"}),
                 201,
@@ -124,7 +124,9 @@ class Server:
 
     def run(self):
         logger.info("Starting Flask server...")
-        logging.getLogger('werkzeug').setLevel(logging.ERROR)  # Suppress Flask's default logger
+        server_logger = logging.getLogger('werkzeug')
+        server_logger.setLevel(logging.ERROR)  # Suppress Flask's default logger
+        # server_logger.disabled = True  # Disable the default Flask logger
         self.app.run(debug=True, port=5001, use_reloader=False, host="0.0.0.0")
 
 

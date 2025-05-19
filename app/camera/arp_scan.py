@@ -95,10 +95,12 @@ def scan_axis_cameras(ip_range="192.168.0.0/24", output_file="cameras.json"):
         axis_devices = save_results(devices, output_file)
         
         if axis_devices:
-            logger.info(f"Found {len(axis_devices)} Axis cameras.")
-            logger.info("ID\tIP Address\tMAC Address\t\tManufacturer")
+            logger.info("\t"*3 + f"-- ARP Scan Results - {len(axis_devices)} cameras: --")
+            logger.info("===================================="*2)
+            logger.info("ID\t\tIP Address\tMAC Address\t\tManufacturer")
             for id, ip, mac, manufacturer in axis_devices:
-                logger.info(f"{id}\t{ip}\t{mac}\t{manufacturer}")
+                logger.info(f"{id}\t\t{ip}\t{mac}\t{manufacturer}")
+            logger.info("===================================="*2)
         else:
             logger.info("No Axis cameras found.")
         

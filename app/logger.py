@@ -7,13 +7,16 @@ class CustomFormatter(logging.Formatter):
     grey = "\x1b[38;20m"
     yellow = "\x1b[33;20m"
     red = "\x1b[31;20m"
+    green = "\x1b[32;20m"
+    blue = "\x1b[34m"
+    white = "\x1b[37m"
+    underline = "\x1b[4m"
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
-    green = "\x1b[32;20m"
-    format_str = "%(name)-12s - %(levelname)-5s -   %(message)s"
+    format_str = "%(name)12s - %(levelname)-8s | %(message)-2s"
 
     FORMATS = {
-        logging.DEBUG: grey + format_str + reset,
+        logging.DEBUG: blue + format_str + reset,
         logging.INFO: grey + format_str + reset,
         logging.WARNING: yellow + format_str + reset,
         logging.ERROR: red + format_str + reset,
