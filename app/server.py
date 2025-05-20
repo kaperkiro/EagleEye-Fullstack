@@ -5,7 +5,10 @@ import os
 import uuid
 from app.logger import get_logger
 import logging
+from app.alarms import mail_sender
+
 logger = get_logger("FLASK SERVER")
+
 
 class Server:
     def __init__(self, mqtt_client, map_manager, alarm_manager):
@@ -13,7 +16,6 @@ class Server:
         self.map_manager = map_manager
         self.alarm_manager = alarm_manager
 
-        
         self.app = Flask(__name__)
         CORS(self.app)
         self.ALARM_FILE = os.path.join("app", "alarms", "alarms.json")
@@ -28,7 +30,7 @@ class Server:
 
     def setup_routes(self):
         app = self.app
-    
+
         @app.route("/api/alarms", methods=["POST"])
         def create_alarm_zone():
             new_alarm = request.get_json()
@@ -39,7 +41,9 @@ class Server:
             self.alarm_manager.add_alarm(new_alarm)
             logger.info("Saved new alarm zone: %s", new_alarm.get("id"))
             return (
-                jsonify({"alarm": new_alarm, "message": "Alarm zone saved successfully"}),
+                jsonify(
+                    {"alarm": new_alarm, "message": "Alarm zone saved successfully"}
+                ),
                 201,
             )
 
@@ -53,7 +57,7 @@ class Server:
         def get_alarms():
             alarms = self.alarm_manager.get_alarms_file()
             return jsonify({"alarms": alarms})
-        
+
         @app.route("/api/alarms/status/<string:alarm_id>", methods=["POST", "PATCH"])
         def status_alarm(alarm_id):
             """
@@ -63,7 +67,6 @@ class Server:
             if not success:
                 return jsonify({"error": "Alarm zone not found"}), 404
             return jsonify({"message": "Status changes succesfully"}), 200
-
 
         @app.route("/api/objects/<int:camera_id>", methods=["GET"])
         def get_camera_detections_by_id(camera_id: int):
@@ -79,7 +82,9 @@ class Server:
                 if lat is None or lon is None:
                     continue
                 x, y = self.map_manager.convert_to_relative((lat, lon))
-                observations.append({"camera_id": camera_id, "x": x, "y": y, "id": obj_id})
+                observations.append(
+                    {"camera_id": camera_id, "x": x, "y": y, "id": obj_id}
+                )
             return jsonify({"observations": observations}), 200
 
         @app.route("/map")
@@ -88,7 +93,7 @@ class Server:
                 return send_file(self.map_manager.file_path)
             else:
                 return jsonify({"message": "Map file not found"}), 404
-            
+
         @app.route("/api/objects", methods=["GET"])
         def get_observations():
             """GET endpoint for retrieving all tracked observations in relative coords."""
@@ -110,9 +115,13 @@ class Server:
         @app.route("/api/heatmap/<timeframe>", methods=["GET"])
         def get_heatmap(timeframe):
             timeframe = int(timeframe)
-            payload = create_heatmap(timeframe, self.map_manager, os.path.join("app", "heatmap", "heatmap_data.json"))
+            payload = create_heatmap(
+                timeframe,
+                self.map_manager,
+                os.path.join("app", "heatmap", "heatmap_data.json"),
+            )
             return jsonify({"heatmap": payload}), 200
-        
+
         @app.route("/api/camera_positions", methods=["GET"])
         def get_camera_positions():
             """
@@ -121,10 +130,9 @@ class Server:
             cameras = self.map_manager.get_camera_relative_positions()
             return jsonify(cameras), 200
 
-
     def run(self):
         logger.info("Starting Flask server...")
-        server_logger = logging.getLogger('werkzeug')
+        server_logger = logging.getLogger("werkzeug")
         server_logger.setLevel(logging.ERROR)  # Suppress Flask's default logger
         # server_logger.disabled = True  # Disable the default Flask logger
         self.app.run(debug=True, port=5001, use_reloader=False, host="0.0.0.0")

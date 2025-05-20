@@ -24,6 +24,7 @@ class Application:
         logger.info("Initializing application")
         clear_streams()
 
+        # byt ut add cameras till find_cameras() för att skanna nätet efter kamerorna.
         self.cameras = add_cameras()
         self.map_manager = MapManager(self.cameras)
         self.alarm_manager = AlarmManager()

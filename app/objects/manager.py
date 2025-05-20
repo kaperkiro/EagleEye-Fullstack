@@ -140,7 +140,6 @@ class ObjectManager:
         )
         if lat_diff > max_distance or lon_diff > max_distance:
             return False
-
         return True
 
     def _prune_history(self) -> None:
