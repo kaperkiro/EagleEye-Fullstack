@@ -6,6 +6,7 @@ from app.logger import get_logger
 
 logger = get_logger("MAP MANAGER")
 
+
 class MapManager:
     def __init__(self, cameras):
         """Holds the current map used in the frontend to convert to relative xy coordinates
@@ -23,24 +24,32 @@ class MapManager:
         self.cameras = cameras
         self.map_config = self.load_map_config()
         self.update_cameras_configs()
-        
+
         self.name = self.map_config["name"]
-        self.corner_coords = [(lat, lon) for lat, lon in self.map_config["corners"]] # [(lat, lon), ...] in order TL, TR, BR, BL
+        self.corner_coords = [
+            (lat, lon) for lat, lon in self.map_config["corners"]
+        ]  # [(lat, lon), ...] in order TL, TR, BR, BL
         self.file_path = self._get_floor_plan()  # Get the floor plan image file path
         self.camera_relative_coords = {}
         for camera_id, camera_data in self.map_config["cameras"].items():
-            self.camera_relative_coords[int(camera_id)] = {"x": camera_data["pixel_percent"][0], 
-                                                           "y": camera_data["pixel_percent"][1], 
-                                                           "heading": camera_data["heading"]}
+            self.camera_relative_coords[int(camera_id)] = {
+                "x": camera_data["pixel_percent"][0],
+                "y": camera_data["pixel_percent"][1],
+                "heading": camera_data["heading"],
+            }
 
     def _get_floor_plan(self):
         """Get the floor plan of the map."""
-        assets_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../assets")) # get the assets dir
+        assets_dir = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "../assets")
+        )  # get the assets dir
         for ext in ("png", "jpg"):
             floor_plan = os.path.join(assets_dir, f"floor_plan.{ext}")
             if os.path.exists(floor_plan):
                 return floor_plan
-        raise FileNotFoundError(f"Floor plan not found in {assets_dir}. Please add a floor_plan.png or floor_plan.jpg.")
+        raise FileNotFoundError(
+            f"Floor plan not found in {assets_dir}. Please add a floor_plan.png or floor_plan.jpg."
+        )
 
     def convert_to_relative(self, coords: tuple) -> tuple:
         map_corners = self.map_config["image_corners"]
@@ -64,7 +73,7 @@ class MapManager:
         u = (dlon / width) * 100
         v = (dlat / height) * 100
         return (u, v)
-    
+
     def load_map_config(self):
         try:
             path = os.path.join(os.path.dirname(__file__), "map_config.json")
@@ -74,7 +83,7 @@ class MapManager:
                     return json.load(json_file)
             else:
                 logger.info("Map config file not found, creating new one")
-                MapConfigGUI() # Open the GUI to create a new map config
+                MapConfigGUI()  # Open the GUI to create a new map config
                 try:
                     with open(path, "r") as json_file:
                         return json.load(json_file)

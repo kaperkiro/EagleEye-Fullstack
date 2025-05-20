@@ -4,9 +4,13 @@ from app.logger import get_logger
 
 logger = get_logger("MQTT BROKER")
 
+
 class BrokerManager:
     def __init__(
-        self, host="localhost", port=1883, config_file="external/mosquitto.conf"
+        self,
+        host="localhost",
+        port=1883,
+        config_file="/Users/kacperorzel/projects/skola/axis/Backend-Code/external/mosquitto.conf",
     ):
         self.host = host
         self.port = port
@@ -25,7 +29,7 @@ class BrokerManager:
                 return True
             except (socket.timeout, ConnectionRefusedError):
                 return False
-            
+
     def stop(self) -> None:
         if self.is_running():
             logger.info("Stopping Mosquitto broker...")
@@ -37,6 +41,8 @@ class BrokerManager:
             return
         else:
             logger.info("Starting Mosquitto broker...")
-            self.process = subprocess.Popen(f"mosquitto -c {self.config_file}", shell=True)  
+            self.process = subprocess.Popen(
+                f"mosquitto -c {self.config_file}", shell=True
+            )
             # add -v flag to enable verbose logging
             # mosquitto -c {self.config.config_file} -v

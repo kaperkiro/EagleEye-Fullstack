@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 
-def load_hist_data(obj_id: str, minutes: int = 5, filename: str = "heatmap_data.jl"):
+def load_hist_data(obj_id: str, minutes: int = 5, filename: str = "heatmap_data.json"):
     """
     Returns a list of {x, y} points for the given track_id,
     including only records from the past `minutes` minutes.

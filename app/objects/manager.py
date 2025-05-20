@@ -17,6 +17,7 @@ BATCH_SIZE = 100  # Number of observations to buffer before writing
 FLUSH_INTERVAL = 5.0  # Seconds between forced buffer flushes
 MIN_HEATMAP_INTERVAL = 0.1  # Minimum seconds between writes per object
 
+
 class GlobalObject:
     """Represents an object tracked across multiple cameras with a unique ID."""
 
@@ -55,7 +56,9 @@ class ObjectManager:
         self.history: List[GlobalObject] = []
         self.map_manager = map_manager
         self.alarm_manager = alarm_manager
-        self.heatmap_data_file = os.path.join(os.path.dirname(__file__), "..", "heatmap", "heatmap_data.json")
+        self.heatmap_data_file = os.path.join(
+            os.path.dirname(__file__), "..", "heatmap", "heatmap_data.json"
+        )
         self._observation_buffer: List[Dict] = []
         self._last_flush_time: float = time.time()
 
@@ -70,7 +73,9 @@ class ObjectManager:
             Datetime object in UTC.
         """
         try:
-            return datetime.fromisoformat(timestamp.rstrip("Z")).replace(tzinfo=timezone.utc)
+            return datetime.fromisoformat(timestamp.rstrip("Z")).replace(
+                tzinfo=timezone.utc
+            )
         except ValueError as e:
             logger.warning(f"Invalid timestamp format: {timestamp}, error: {e}")
             raise
@@ -102,123 +107,48 @@ class ObjectManager:
         return intersection_area / union_area if union_area > 0 else 0.0
 
     @staticmethod
-    def check_if_same_observation(obs1: Dict, obs2: Dict) -> bool:
-        """Check if two observations from different cameras represent the same object.
-
-        Compares timestamp, geoposition, class, colors (exact match), and bounding box (overlap).
-        Handles partial data by adjusting weights dynamically.
-
-        Args:
-            obs1: First observation dictionary (e.g., {"bounding_box": {...}, "timestamp": "..."}).
-            obs2: Second observation dictionary.
-
-        Returns:
-            bool: True if observations are likely the same object.
+    def check_if_same_observation(obs1: dict, obs2: dict) -> bool:
+        """Checks if two different observations are of the same object.
+        Same if geocoords are max 1.5 m apart and clothing colors match.
         """
-        # Configuration
-        THRESHOLD = 0.75  # Similarity score threshold
-        WEIGHTS = {
-            "timestamp": 0.25,  # Temporal proximity
-            "geoposition": 0.35,  # Most reliable when available
-            "class": 0.20,  # Object type
-            "colors": 0.15,  # Clothing colors (exact match)
-            "bounding_box": 0.05,  # Overlap-based
-        }
-        MAX_TIME_DELTA = 1.0  # Max time difference (seconds)
-        MAX_GEO_DISTANCE = 1.5  # Max geolocation distance (meters)
-        MIN_OVERLAP = 0.2  # Minimum overlap for bounding box match
+        x = 1.5  # meters
+        max_distance = x / 111320  # Convert meters to degrees
 
-        score = 0.0
-        total_weight = 0.0
+        # Get data from observations
+        obs1_class = obs1.get("class", {})
+        obs2_class = obs2.get("class", {})
 
-        # Timestamp comparison
-        try:
-            ts1 = ObjectManager.parse_timestamp(obs1.get("timestamp"))
-            ts2 = ObjectManager.parse_timestamp(obs2.get("timestamp"))
-            time_delta = abs((ts1 - ts2).total_seconds())
-            time_score = max(0.0, 1.0 - time_delta / MAX_TIME_DELTA)
-            score += WEIGHTS["timestamp"] * time_score
-            total_weight += WEIGHTS["timestamp"]
-        except Exception as e:
-            logger.debug(f"Timestamp comparison failed: {e}")
+        if obs1_class.get("type") != obs2_class.get("type"):
+            return False
 
-        # Geoposition comparison
-        geo1 = obs1.get("geoposition", {})
-        geo2 = obs2.get("geoposition", {})
-        if (
-            geo1.get("latitude") is not None
-            and geo1.get("longitude") is not None
-            and geo2.get("latitude") is not None
-            and geo2.get("longitude") is not None
-        ):
-            try:
-                dist = geodesic(
-                    (geo1["latitude"], geo1["longitude"]),
-                    (geo2["latitude"], geo2["longitude"]),
-                ).meters
-                geo_score = max(0.0, 1.0 - dist / MAX_GEO_DISTANCE)
-                score += WEIGHTS["geoposition"] * geo_score
-                total_weight += WEIGHTS["geoposition"]
-            except Exception as e:
-                logger.warning(f"Geolocation comparison failed: {e}")
-        else:
-            logger.debug("Missing geoposition in one or both observations")
+        # Safely access clothing colors
+        obs1_upper = obs1_class.get("upper_clothing_colors", [{}])[0].get("name", "")
+        obs2_upper = obs2_class.get("upper_clothing_colors", [{}])[0].get("name", "")
+        obs1_lower = obs1_class.get("lower_clothing_colors", [{}])[0].get("name", "")
+        obs2_lower = obs2_class.get("lower_clothing_colors", [{}])[0].get("name", "")
 
-        # Class comparison
-        class1 = obs1.get("class", {}).get("type")
-        class2 = obs2.get("class", {}).get("type")
-        if class1 and class2:
-            class_score = 1.0 if class1 == class2 else 0.0
-            score += WEIGHTS["class"] * class_score
-            total_weight += WEIGHTS["class"]
-        else:
-            logger.debug("Missing class in one or both observations")
+        if obs1_upper != obs2_upper or obs1_lower != obs2_lower:
+            return False
 
-        # Color comparison (exact match)
-        color_score = 0.0
-        color_count = 0
-        for field in ["upper_clothing_colors", "lower_clothing_colors"]:
-            colors1 = obs1.get("class", {}).get(field, [])
-            colors2 = obs2.get("class", {}).get(field, [])
-            if colors1 and colors2:
-                name1 = colors1[0]["name"] if colors1 else ""
-                name2 = colors2[0]["name"] if colors2 else ""
-                similarity = 1.0 if name1.lower() == name2.lower() else 0.0
-                color_score += similarity
-                color_count += 1
-        if color_count > 0:
-            score += WEIGHTS["colors"] * (color_score / color_count)
-            total_weight += WEIGHTS["colors"]
-        else:
-            logger.debug("No matching colors available")
+        obs1_coords = obs1.get("geoposition", {})
+        obs2_coords = obs2.get("geoposition", {})
 
-        # Bounding box comparison (overlap)
-        bb1 = obs1.get("bounding_box")
-        bb2 = obs2.get("bounding_box")
-        if bb1 and bb2:
-            try:
-                overlap = ObjectManager.compute_overlap(bb1, bb2)
-                bb_score = 1.0 if overlap >= MIN_OVERLAP else 0.0
-                score += WEIGHTS["bounding_box"] * bb_score
-                total_weight += WEIGHTS["bounding_box"]
-            except Exception as e:
-                logger.warning(f"Bounding box comparison failed: {e}")
-        else:
-            logger.debug("Missing bounding box in one or both observations")
-
-        # Normalize score
-        final_score = score / total_weight if total_weight > 0 else 0.0
-        is_same = final_score >= THRESHOLD
-        logger.debug(
-            f"Observation comparison: score={final_score:.3f}, threshold={THRESHOLD}, same={is_same}"
+        # Check if coordinates are within 1.5 meters
+        lat_diff = abs(obs1_coords.get("latitude", 0) - obs2_coords.get("latitude", 0))
+        lon_diff = abs(
+            obs1_coords.get("longitude", 0) - obs2_coords.get("longitude", 0)
         )
-        return is_same
+        if lat_diff > max_distance or lon_diff > max_distance:
+            return False
+
+        return True
 
     def _prune_history(self) -> None:
         """Remove archived objects older than 15 seconds."""
         current_time = time.time()
         self.history = [
-            obj for obj in self.history
+            obj
+            for obj in self.history
             if hasattr(obj, "archived_at") and (current_time - obj.archived_at) <= 15
         ]
 
@@ -231,14 +161,18 @@ class ObjectManager:
             with open(self.heatmap_data_file, "a", encoding="utf-8") as file:
                 for observation in self._observation_buffer:
                     file.write(json.dumps(observation, ensure_ascii=False) + "\n")
-            logger.debug(f"Flushed {len(self._observation_buffer)} observations to {self.heatmap_data_file}")
+            logger.debug(
+                f"Flushed {len(self._observation_buffer)} observations to {self.heatmap_data_file}"
+            )
         except IOError as e:
             logger.error(f"Error flushing buffer to {self.heatmap_data_file}: {e}")
         finally:
             self._observation_buffer.clear()
             self._last_flush_time = time.time()
 
-    def _save_observations(self, observations: List[Dict], obj: GlobalObject | None = None) -> None:
+    def _save_observations(
+        self, observations: List[Dict], obj: GlobalObject | None = None
+    ) -> None:
         """Buffer observations for heatmap, writing when batch size or time interval is reached.
 
         Args:
@@ -261,16 +195,18 @@ class ObjectManager:
                 obj.last_heatmap_write = current_time
 
         # Flush buffer if size or time interval exceeded
-        if (len(self._observation_buffer) >= BATCH_SIZE or
-                (current_time - self._last_flush_time) >= FLUSH_INTERVAL):
+        if (
+            len(self._observation_buffer) >= BATCH_SIZE
+            or (current_time - self._last_flush_time) >= FLUSH_INTERVAL
+        ):
             self._flush_buffer()
 
     def _is_valid_geoposition(self, geoposition: Dict) -> bool:
         """Check if geoposition has non-null latitude and longitude."""
         return (
-            isinstance(geoposition, dict) and
-            geoposition.get("latitude") is not None and
-            geoposition.get("longitude") is not None
+            isinstance(geoposition, dict)
+            and geoposition.get("latitude") is not None
+            and geoposition.get("longitude") is not None
         )
 
     def _get_last_geoposition(self, obj: GlobalObject) -> Dict | None:
@@ -312,29 +248,39 @@ class ObjectManager:
 
             # Try to resurrect from history
             for hist_obj in self.history[:]:
-                if ObjectManager.check_if_same_observation(hist_obj.observations[-1], observation):
+                if ObjectManager.check_if_same_observation(
+                    hist_obj.observations[-1], observation
+                ):
                     if not self._is_valid_geoposition(geoposition):
-                        geoposition = self._get_last_geoposition(hist_obj) or geoposition
+                        geoposition = (
+                            self._get_last_geoposition(hist_obj) or geoposition
+                        )
                         observation["geoposition"] = geoposition
                     hist_obj.add_observation(observation, camera_id)
                     self.history.remove(hist_obj)
                     self.objects.append(hist_obj)
                     matched_ids.add(hist_obj.id)
                     if self._is_valid_geoposition(observation["geoposition"]):
-                        self._save_observations([observation], hist_obj)  # Buffer with sampling
+                        self._save_observations(
+                            [observation], hist_obj
+                        )  # Buffer with sampling
                         self._trigger_alarms(observation["geoposition"])
                     break
             else:
                 # Match with existing objects
                 for obj in self.objects:
-                    if ObjectManager.check_if_same_observation(obj.observations[-1], observation):
+                    if ObjectManager.check_if_same_observation(
+                        obj.observations[-1], observation
+                    ):
                         if not self._is_valid_geoposition(geoposition):
                             geoposition = self._get_last_geoposition(obj) or geoposition
                             observation["geoposition"] = geoposition
                         obj.add_observation(observation, camera_id)
                         matched_ids.add(obj.id)
                         if self._is_valid_geoposition(observation["geoposition"]):
-                            self._save_observations([observation], obj)  # Buffer with sampling
+                            self._save_observations(
+                                [observation], obj
+                            )  # Buffer with sampling
                             self._trigger_alarms(observation["geoposition"])
                         break
                 else:
@@ -344,10 +290,14 @@ class ObjectManager:
                         new_obj = GlobalObject(observation, camera_id)
                         self.objects.append(new_obj)
                         matched_ids.add(new_obj.id)
-                        self._save_observations([observation], new_obj)  # Buffer with sampling
+                        self._save_observations(
+                            [observation], new_obj
+                        )  # Buffer with sampling
                         self._trigger_alarms(geoposition)
                     else:
-                        logger.debug(f"Skipping observation without valid geoposition: {observation}")
+                        logger.debug(
+                            f"Skipping observation without valid geoposition: {observation}"
+                        )
                         continue
 
         # Archive objects no longer observed by this camera

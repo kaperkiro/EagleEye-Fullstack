@@ -7,13 +7,15 @@ from app.mqtt.client import MqttClient
 from app.camera.webrtc import start_rtsp_to_webrtc, clear_streams
 from app.server import Server
 from app.map.manager import MapManager
-from app.camera.arp_scan import find_cameras
+from app.camera.arp_scan import find_cameras, add_cameras
 from app.alarms.alarm import AlarmManager
 from app.objects.manager import ObjectManager
 from app.logger import get_logger
+
 logger = get_logger("MAIN")
 
 import threading
+
 
 class Application:
     def __init__(self):
@@ -22,7 +24,7 @@ class Application:
         logger.info("Initializing application")
         clear_streams()
 
-        self.cameras = find_cameras()
+        self.cameras = add_cameras()
         self.map_manager = MapManager(self.cameras)
         self.alarm_manager = AlarmManager()
         self.object_manager = ObjectManager(self.map_manager, self.alarm_manager)
@@ -32,7 +34,11 @@ class Application:
         self.webrtc_thread = threading.Thread(target=start_rtsp_to_webrtc, daemon=True)
         self.webrtc_thread.start()
 
-        self.server_thread = threading.Thread(target=Server, args=(self.mqtt_client, self.map_manager, self.alarm_manager), daemon=True)
+        self.server_thread = threading.Thread(
+            target=Server,
+            args=(self.mqtt_client, self.map_manager, self.alarm_manager),
+            daemon=True,
+        )
         self.server_thread.start()
 
     def stop_application(self):
@@ -49,7 +55,9 @@ class Application:
             logger.error(f"Application error: {str(e)}")
             self.stop_application()
         except KeyboardInterrupt:
-            logger.info("Keyboard interrupt received, stopping application, please wait...")
+            logger.info(
+                "Keyboard interrupt received, stopping application, please wait..."
+            )
             self.stop_application()
         except SystemExit:
             logger.info("System exit received, stopping application, please wait...")
@@ -63,9 +71,11 @@ class Application:
         finally:
             self.stop_application()
 
+
 def main():
     app = Application()
     app.run()
+
 
 if __name__ == "__main__":
     main()

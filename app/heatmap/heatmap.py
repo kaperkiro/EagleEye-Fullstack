@@ -13,6 +13,7 @@ CELL_PCT = 100.0 / GRID_SIZE  # 2.0%
 
 logger = get_logger("MAIN")
 
+
 def parse_observation_timestamp(timestamp: str) -> datetime:
     """Parse UTC timestamp string to datetime object.
 
@@ -26,10 +27,13 @@ def parse_observation_timestamp(timestamp: str) -> datetime:
         ValueError: If timestamp format is invalid.
     """
     try:
-        return datetime.fromisoformat(timestamp.rstrip("Z")).replace(tzinfo=timezone.utc)
+        return datetime.fromisoformat(timestamp.rstrip("Z")).replace(
+            tzinfo=timezone.utc
+        )
     except ValueError as e:
         logger.warning(f"Invalid timestamp format: {timestamp}, error: {e}")
         raise
+
 
 def read_and_filter_observations(filename: str, cutoff: datetime) -> List[Dict]:
     """Read observations from JSON-Lines file, filtering by cutoff time.
@@ -45,6 +49,10 @@ def read_and_filter_observations(filename: str, cutoff: datetime) -> List[Dict]:
         IOError: If file reading fails.
     """
     observations = []
+    dirpath = os.path.dirname(filename)
+    if dirpath and not os.path.exists(dirpath):
+        os.makedirs(dirpath, exist_ok=True)
+
     if not os.path.exists(filename):
         open(filename, "w", encoding="utf-8").close()  # Create empty file
 
@@ -60,14 +68,19 @@ def read_and_filter_observations(filename: str, cutoff: datetime) -> List[Dict]:
                 except json.JSONDecodeError:
                     logger.warning(f"Skipping malformed JSON line: {line.strip()}")
                 except KeyError:
-                    logger.warning(f"Skipping observation without timestamp: {line.strip()}")
+                    logger.warning(
+                        f"Skipping observation without timestamp: {line.strip()}"
+                    )
     except IOError as e:
         logger.error(f"Error reading file {filename}: {e}")
         raise
 
     return observations
 
-def bin_observations(observations: List[Dict], mapmanager, grid_size: int = GRID_SIZE) -> np.ndarray:
+
+def bin_observations(
+    observations: List[Dict], mapmanager, grid_size: int = GRID_SIZE
+) -> np.ndarray:
     """Bin observations into a grid based on relative coordinates.
 
     Args:
@@ -83,7 +96,9 @@ def bin_observations(observations: List[Dict], mapmanager, grid_size: int = GRID
 
     for observation in observations:
         geoposition = observation.get("geoposition", {})
-        if not (lat := geoposition.get("latitude")) or not (lon := geoposition.get("longitude")):
+        if not (lat := geoposition.get("latitude")) or not (
+            lon := geoposition.get("longitude")
+        ):
             continue
         try:
             u, v = mapmanager.convert_to_relative((lat, lon))
@@ -96,8 +111,8 @@ def bin_observations(observations: List[Dict], mapmanager, grid_size: int = GRID
         x_indices = np.floor(coords[:, 0] / CELL_PCT).astype(int)
         y_indices = np.floor(coords[:, 1] / CELL_PCT).astype(int)
         np.add.at(counts, (y_indices, x_indices), 1)
-
     return counts
+
 
 def generate_heatmap_data(counts: np.ndarray, grid_size: int = GRID_SIZE) -> List[Dict]:
     """Generate heatmap data from binned counts.
@@ -118,9 +133,16 @@ def generate_heatmap_data(counts: np.ndarray, grid_size: int = GRID_SIZE) -> Lis
                 x = x_idx * CELL_PCT + CELL_PCT / 2
                 y = y_idx * CELL_PCT + CELL_PCT / 2
                 intensity = count / max_count
-                heatmap_data.append({"x": round(x, 2), "y": round(y, 2), "intensity": round(intensity, 3)})
+                heatmap_data.append(
+                    {
+                        "x": round(x, 2),
+                        "y": round(y, 2),
+                        "intensity": round(intensity, 3),
+                    }
+                )
 
     return heatmap_data
+
 
 def delete_old_observations(filename: str, minutes: int = 1440) -> None:
     """Prune observations older than specified minutes from JSON-Lines file.
@@ -145,7 +167,9 @@ def delete_old_observations(filename: str, minutes: int = 1440) -> None:
                     except json.JSONDecodeError:
                         logger.warning(f"Skipping malformed JSON line: {line.strip()}")
                     except KeyError:
-                        logger.warning(f"Skipping observation without timestamp: {line.strip()}")
+                        logger.warning(
+                            f"Skipping observation without timestamp: {line.strip()}"
+                        )
 
             with open(filename, "w", encoding="utf-8") as file:
                 for obs in kept_observations:
@@ -158,7 +182,10 @@ def delete_old_observations(filename: str, minutes: int = 1440) -> None:
     else:
         logger.info(f"File {filename} does not exist; no pruning needed")
 
-def create_heatmap(timeframe_min: int, mapmanager, filename: str) -> Dict[str, List[Dict]]:
+
+def create_heatmap(
+    timeframe_min: int, mapmanager, filename: str
+) -> Dict[str, List[Dict]]:
     """Generate a heatmap from observations within a timeframe.
 
     Args:
