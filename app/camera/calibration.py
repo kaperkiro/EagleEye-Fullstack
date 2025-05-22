@@ -11,9 +11,15 @@ from app.logger import get_logger
 
 logger = get_logger("CALIBRATION")
 
+"""GUI tool for calibrating camera view to floor plan and tracking via MQTT."""
+
+
 # Updated FloorplanGUI class to integrate MQTT
 class Calibration:
+    """GUI for marking calibration points and mapping detections from camera to floor plan."""
+
     def __init__(self, camera, mqtt_client):
+        """Initialize GUI, load icon, and start main loop."""
         self.mqtt_client = mqtt_client
         self.camera = camera
         self.root = tk.Tk()
@@ -73,7 +79,7 @@ class Calibration:
         self.root.mainloop()
 
     def CenterWindowToDisplay(self, width: int, height: int):
-        """Centers the window to the main display/monitor"""
+        """Return geometry string to center window on screen."""
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
         x = int((screen_width / 2) - (width / 2))
@@ -81,6 +87,7 @@ class Calibration:
         return f"{width}x{height}+{x}+{y}"
 
     def configure_gui_elements(self):
+        """Layout frames, canvases, buttons, and labels for the GUI."""
         self.root.configure(bg="#333333")  # top level container
         self.root.eval(
             "tk::PlaceWindow %s center" % self.root.winfo_pathname(self.root.winfo_id())
@@ -209,7 +216,7 @@ class Calibration:
         self.instruction_label.pack(pady=3)
 
     def on_closing(self):
-        """Handle window closing by stopping the MQTT client."""
+        """Stop MQTT client and close the GUI."""
         self.mqtt_client.stop()
         self.root.destroy()
 
@@ -242,8 +249,7 @@ class Calibration:
         return resized_image, offset_x, offset_y, new_width, new_height
 
     def load_images(self):
-        """Load the camera screenshot and floor plan image from the root folder."""
-
+        """Load and display camera snapshot and floor plan, enabling calibration button."""
         self.camera.save_snapshot()  # Save a snapshot from the camera
 
         root_dir = os.path.dirname(os.path.abspath(__file__))

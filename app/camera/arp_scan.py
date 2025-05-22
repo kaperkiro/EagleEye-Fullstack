@@ -10,9 +10,11 @@ from app.logger import get_logger
 
 logger = get_logger("ARP SCAN")
 
+"""ARP scanning utilities for detecting Axis Communications cameras on a subnet."""
+
 
 def get_interface_for_subnet(subnet="192.168.0.0/24"):
-    """Find the network interface with an IP in the specified subnet."""
+    """Return network interface name matching subnet, with Windows NPCAP prefix if needed."""
     subnet_prefix = subnet.split("/")[0][: subnet.rfind(".")]  # e.g., '192.168.0'
     try:
         for iface in netifaces.interfaces():
@@ -39,7 +41,7 @@ def get_interface_for_subnet(subnet="192.168.0.0/24"):
 
 
 def arp_scan(ip_range, interface):
-    """Perform ARP scan and return list of (IP, MAC, Manufacturer)."""
+    """Perform ARP scan on ip_range via interface; return list of (IP, MAC, Manufacturer)."""
     arp = scapy.ARP(pdst=ip_range)
     ether = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
     packet = ether / arp
@@ -59,7 +61,7 @@ def arp_scan(ip_range, interface):
 
 
 def save_results(devices, output_file="cameras.json"):
-    """Save devices to a JSON file in the script's directory, filtering for Axis Communications, with assigned IDs."""
+    """Filter Axis devices, assign IDs, save to JSON file, and return list of tuples."""
     timestamp = datetime.now().strftime("%Y-%m-01 %H:%M:%S")
     axis_devices = [d for d in devices if d[2] == "Axis Communications AB"]
 
@@ -124,6 +126,7 @@ def scan_axis_cameras(ip_range="192.168.0.0/24", output_file="cameras.json"):
 
 
 def find_cameras():
+    """Discover Axis cameras and return list of Camera instances with IP and ID."""
     cameras = []
     try:
         scan_results = scan_axis_cameras()
@@ -143,6 +146,7 @@ if __name__ == "__main__":
 
 
 def add_cameras():
+    """Add cameras manually for testing purposes."""
     cameras = []
     cameras.append(Camera(ip="192.168.0.101", id=1))
     cameras.append(Camera(ip="192.168.0.103", id=2))

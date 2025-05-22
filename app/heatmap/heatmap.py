@@ -16,13 +16,10 @@ logger = get_logger("MAIN")
 
 def parse_observation_timestamp(timestamp: str) -> datetime:
     """Parse UTC timestamp string to datetime object.
-
     Args:
         timestamp: ISO 8601 timestamp string (e.g., "2025-05-16T21:34:00Z").
-
     Returns:
         Datetime object in UTC.
-
     Raises:
         ValueError: If timestamp format is invalid.
     """
@@ -37,14 +34,11 @@ def parse_observation_timestamp(timestamp: str) -> datetime:
 
 def read_and_filter_observations(filename: str, cutoff: datetime) -> List[Dict]:
     """Read observations from JSON-Lines file, filtering by cutoff time.
-
     Args:
         filename: Path to JSON-Lines file containing one observation per line.
         cutoff: Datetime threshold (UTC) for filtering observations.
-
     Returns:
         List of observation dictionaries within the timeframe.
-
     Raises:
         IOError: If file reading fails.
     """
@@ -82,12 +76,10 @@ def bin_observations(
     observations: List[Dict], mapmanager, grid_size: int = GRID_SIZE
 ) -> np.ndarray:
     """Bin observations into a grid based on relative coordinates.
-
     Args:
         observations: List of observation dictionaries with geoposition.
         mapmanager: Object with convert_to_relative((lat, lon)) -> (u%, v%) method.
         grid_size: Size of the grid (default: 50).
-
     Returns:
         2D NumPy array with binned counts.
     """
@@ -116,11 +108,9 @@ def bin_observations(
 
 def generate_heatmap_data(counts: np.ndarray, grid_size: int = GRID_SIZE) -> List[Dict]:
     """Generate heatmap data from binned counts.
-
     Args:
         counts: 2D NumPy array with binned observation counts.
         grid_size: Size of the grid (default: 50).
-
     Returns:
         List of dictionaries with x, y, and normalized intensity.
     """
@@ -146,7 +136,6 @@ def generate_heatmap_data(counts: np.ndarray, grid_size: int = GRID_SIZE) -> Lis
 
 def delete_old_observations(filename: str, minutes: int = 1440) -> None:
     """Prune observations older than specified minutes from JSON-Lines file.
-
     Args:
         filename: Path to JSON-Lines file containing one observation per line.
         minutes: Age threshold in minutes (default: 1440, i.e., 24 hours).
@@ -187,15 +176,12 @@ def create_heatmap(
     timeframe_min: int, mapmanager, filename: str
 ) -> Dict[str, List[Dict]]:
     """Generate a heatmap from observations within a timeframe.
-
     Args:
         timeframe_min: Time window in minutes (e.g., 60 for last hour).
         mapmanager: Object with convert_to_relative((lat, lon)) -> (u%, v%) method.
         filename: Path to JSON-Lines file with observations.
-
     Returns:
         Dictionary with heatmap data (e.g., {"heatmap": [{"x": 1.0, "y": 1.0, "intensity": 0.5}]}).
-
     Raises:
         ValueError: If timeframe_min is not positive.
     """

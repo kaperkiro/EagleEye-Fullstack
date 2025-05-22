@@ -2,6 +2,5 @@
     "server": {
         "http_port": ":8083"
     },
-    "streams": {
-    }
+    "streams": {}
 }

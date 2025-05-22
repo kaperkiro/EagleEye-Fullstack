@@ -19,7 +19,7 @@ class MqttClient:
     def __init__(
         self, object_manager, broker_host="localhost", broker_port=1883, keepalive=60
     ):
-
+        """Initialize client, set callbacks, and connect to the broker."""
         self.broker_host = broker_host
         self.broker_port = broker_port
         self.keepalive = keepalive
@@ -30,6 +30,7 @@ class MqttClient:
         self.start()
 
     def _setup_callbacks(self) -> None:
+        """Assign internal connect and message handlers to the MQTT client."""
         self.client.on_connect = self._on_connect
         self.client.on_message = self._on_message
 
@@ -41,6 +42,7 @@ class MqttClient:
         reason_code: int,
         properties: Any,
     ) -> None:
+        """Handle successful connection by subscribing to frame metadata topics."""
         logger.info(
             f"Connected to MQTT broker at {self.broker_host}:{self.broker_port} with result code: %s",
             reason_code,
@@ -72,12 +74,15 @@ class MqttClient:
             logger.error(f"Error decoding JSON message: {e}")
 
     def connect(self) -> None:
+        """Establish connection to the MQTT broker."""
         self.client.connect(self.broker_host, self.broker_port, self.keepalive)
 
     def subscribe(self, topic: str, qos: int = 0) -> None:
+        """Subscribe to a MQTT topic with given QoS."""
         self.client.subscribe(topic, qos=qos)
 
     def start_background_loop(self) -> None:
+        """Start the network loop in a background thread."""
         self.client.loop_start()
 
     def start(self) -> None:
@@ -98,9 +103,10 @@ class MqttClient:
         self.client.loop_start()
 
     def stop(self) -> None:
+        """Stop the network loop and disconnect from the broker."""
         self.client.loop_stop()
         self.client.disconnect()
 
     def get_detections(self, camera_id: int) -> List[Dict]:
-        # Return globally tracked objects for the camera
+        """Retrieve latest detections for a given camera from object manager."""
         return self.object_manager.get_objects_by_camera(camera_id)

@@ -6,8 +6,12 @@ from app.logger import get_logger
 
 logger = get_logger("MAP MANAGER")
 
+"""Manage map settings and convert geocoordinates to relative image positions for cameras."""
+
 
 class MapManager:
+    """Load map config, compute relative camera positions, and provide coordinate conversions."""
+
     def __init__(self, cameras):
         """Holds the current map used in the frontend to convert to relative xy coordinates
         instead of absolute geocoordinates.
@@ -39,7 +43,7 @@ class MapManager:
             }
 
     def _get_floor_plan(self):
-        """Get the floor plan of the map."""
+        """Return file path of the floor plan image in assets directory or raise if missing."""
         assets_dir = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "../assets")
         )  # get the assets dir
@@ -52,6 +56,7 @@ class MapManager:
         )
 
     def convert_to_relative(self, coords: tuple) -> tuple:
+        """Convert geocoordinates (lat, lon) to relative percentages based on map corners."""
         map_corners = self.map_config["image_corners"]
         tl, tr, br, bl = map_corners
         lat0, lon0 = tl
@@ -75,6 +80,7 @@ class MapManager:
         return (u, v)
 
     def load_map_config(self):
+        """Read map_config.json or launch GUI to create it, returning parsed config dict."""
         try:
             path = os.path.join(os.path.dirname(__file__), "map_config.json")
             if os.path.exists(path):
@@ -94,6 +100,7 @@ class MapManager:
             logger.error(f"Error loading map config: {str(e)}")
 
     def update_cameras_configs(self):
+        """Apply geocoordinate, height, and heading settings from map config to camera objects."""
         try:
             for camera in self.cameras:
                 if str(camera.id) in self.map_config["cameras"]:
@@ -111,4 +118,5 @@ class MapManager:
         return self.camera_relative_coords
 
     def __str__(self):
+        """Return string with map name, corner coords, and floor plan path."""
         return f"Map(name={self.name}, corner_coords={self.corner_coords}, file_path={self.file_path})"

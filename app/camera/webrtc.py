@@ -5,11 +5,14 @@ import json
 from app.logger import get_logger
 
 logger = get_logger("WEBRTC")
+"""Utilities for running RTSPtoWebRTC server and managing stream configurations."""
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CONFIG_FILE = os.path.join(ROOT_DIR, "external", "RTSPtoWebRTC", "config.json")
 
+
 def start_rtsp_to_webrtc():
+    """Start RTSPtoWebRTC Go server subprocess, log its output, and handle errors."""
     root_dir = os.path.dirname(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     )
@@ -61,7 +64,7 @@ def start_rtsp_to_webrtc():
 def add_camera_to_config(
     cam_id, cam_ip, cam_username="student", cam_password="student_pass"
 ) -> None:
-    """Add the camera dynamically to the config file."""
+    """Add a camera entry to the RTSPtoWebRTC config file if not already present."""
 
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, "r") as f:
@@ -84,7 +87,7 @@ def add_camera_to_config(
 
 
 def clear_streams():
-    """Clear all streams in the config file."""
+    """Remove all stream entries from the RTSPtoWebRTC config file."""
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, "r") as f:
             config = json.load(f)

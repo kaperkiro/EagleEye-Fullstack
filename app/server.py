@@ -11,7 +11,10 @@ logger = get_logger("FLASK SERVER")
 
 
 class Server:
+    """Configure Flask routes for alarms, objects, heatmaps, and map retrieval."""
+
     def __init__(self, mqtt_client, map_manager, alarm_manager):
+        """Initialize Flask app, CORS, and start server."""
         self.mqtt_client = mqtt_client
         self.map_manager = map_manager
         self.alarm_manager = alarm_manager
@@ -24,15 +27,18 @@ class Server:
 
     # close server when keyboard interrupt
     def __del__(self):
+        """Shutdown Flask server when instance is deleted."""
         logger.info("Stopping Flask server...")
         self.app.shutdown()
         logger.info("Flask server stopped.")
 
     def setup_routes(self):
+        """Define all API and map routes on the Flask app."""
         app = self.app
 
         @app.route("/api/alarms", methods=["POST"])
         def create_alarm_zone():
+            """POST endpoint to create a new alarm zone."""
             new_alarm = request.get_json()
             if not new_alarm:
                 return jsonify({"error": "No alarm zone provided"}), 400
@@ -49,12 +55,14 @@ class Server:
 
         @app.route("/api/alarms/<string:alarm_id>", methods=["DELETE"])
         def delete_alarm(alarm_id):
+            """DELETE endpoint to remove an alarm zone by ID."""
             self.alarm_manager.remove_alarm(alarm_id)
             logger.info("Removed alarm zone with id: %s", alarm_id)
             return jsonify({"message": "Alarm zone removed successfully"}), 200
 
         @app.route("/api/alarms", methods=["GET"])
         def get_alarms():
+            """GET endpoint to list all alarm zones."""
             alarms = self.alarm_manager.get_alarms_file()
             return jsonify({"alarms": alarms})
 
@@ -70,6 +78,7 @@ class Server:
 
         @app.route("/api/objects/<int:camera_id>", methods=["GET"])
         def get_camera_detections_by_id(camera_id: int):
+            """GET endpoint for observations of a specific camera."""
             if not self.mqtt_client:
                 return jsonify({"message": "MQTT client not available"}), 503
             raw = self.mqtt_client.object_manager.get_objects_by_camera(camera_id)
@@ -89,6 +98,7 @@ class Server:
 
         @app.route("/map")
         def get_map():
+            """Serve the floor plan image file."""
             if os.path.exists(self.map_manager.file_path):
                 return send_file(self.map_manager.file_path)
             else:
@@ -96,7 +106,7 @@ class Server:
 
         @app.route("/api/objects", methods=["GET"])
         def get_observations():
-            """GET endpoint for retrieving all tracked observations in relative coords."""
+            """GET endpoint for all tracked observations across cameras."""
             # retrieve raw position data from ObjectManager
             raw = self.mqtt_client.object_manager.get_all_objects()
             observations = []
@@ -114,11 +124,12 @@ class Server:
 
         @app.route("/api/heatmap/<timeframe>", methods=["GET"])
         def get_heatmap(timeframe):
+            """GET endpoint to generate a heatmap for given timeframe."""
             timeframe = int(timeframe)
             payload = create_heatmap(
                 timeframe,
                 self.map_manager,
-                os.path.join("app", "heatmap", "heatmap_data.json"),
+                os.path.join("heatmap", "heatmap_data.json"),
             )
             return jsonify({"heatmap": payload}), 200
 
@@ -131,6 +142,7 @@ class Server:
             return jsonify(cameras), 200
 
     def run(self):
+        """Start Flask development server with suppressed default logging."""
         logger.info("Starting Flask server...")
         server_logger = logging.getLogger("werkzeug")
         server_logger.setLevel(logging.ERROR)  # Suppress Flask's default logger
@@ -139,6 +151,7 @@ class Server:
 
 
 if __name__ == "__main__":
+    """Launch server with sample map and MQTT client if run as script."""
     from app.mqtt.client import MqttClient
     from app.map.manager import MapManager
 

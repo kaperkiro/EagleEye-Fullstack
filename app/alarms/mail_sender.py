@@ -9,7 +9,7 @@ logger = get_logger("ALARM")
 
 SENDER_EMAIL = "eagleeyelarm@gmail.com"
 SENDER_NAME = "EagleEye Alarm!"
-APP_PASSWORD = "iybxtpkptqdczuhc"  # your 16-char app password
+APP_PASSWORD = "iybxtpkptqdczuhc"
 RECEIVER_EMAIL = "kacper.orzel0531@gmail.com"
 RECEIVER_NAME = "Mottagarens Namn"
 SUBJECT = "ALARM!!!"
@@ -17,7 +17,12 @@ BODY = "There is a thief in your store!!!"
 
 
 def send_mail():
-    # Build the MIME message
+    """
+    Construct and send an alarm email via Gmail SMTP.
+    Uses configured sender and receiver credentials to build a multipart
+    message with subject and body, establishes a secure connection,
+    logs in, and transmits the message. Errors are logged and printed.
+    """
     msg = MIMEMultipart()
     msg["From"] = formataddr((SENDER_NAME, SENDER_EMAIL))
     msg["To"] = formataddr((RECEIVER_NAME, RECEIVER_EMAIL))

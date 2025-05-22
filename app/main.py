@@ -18,7 +18,10 @@ import threading
 
 
 class Application:
+    """Coordinate initialization and shutdown of all EagleEye system components."""
+
     def __init__(self):
+        """Initialize threads, clear previous streams, and start services."""
         self.running = True
 
         logger.info("Initializing application")
@@ -42,11 +45,13 @@ class Application:
         self.server_thread.start()
 
     def stop_application(self):
+        """Stop MQTT client, broker, and mark application as not running."""
         self.running = False
         self.mqtt_client.stop()
         self.broker.stop()
 
     def run(self):
+        """Enter main loop, catching and handling shutdown and unexpected errors."""
         try:
             while self.running:
                 pass
@@ -73,6 +78,7 @@ class Application:
 
 
 def main():
+    """Instantiate and run the Application."""
     app = Application()
     app.run()
 
