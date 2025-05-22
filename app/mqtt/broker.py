@@ -1,6 +1,7 @@
 import socket
 import subprocess
 from app.logger import get_logger
+import os
 
 logger = get_logger("MQTT BROKER")
 
@@ -10,8 +11,8 @@ class BrokerManager:
         self,
         host="localhost",
         port=1883,
-        config_file="/Users/kacperorzel/projects/skola/axis/Backend-Code/external/mosquitto.conf",
-    ):
+        config_file=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "external", "mosquitto.conf")
+        ):
         self.host = host
         self.port = port
         self.config_file = config_file

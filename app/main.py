@@ -7,7 +7,7 @@ from app.mqtt.client import MqttClient
 from app.camera.webrtc import start_rtsp_to_webrtc, clear_streams
 from app.server import Server
 from app.map.manager import MapManager
-from app.camera.arp_scan import find_cameras, add_cameras
+from app.camera.arp_scan import find_cameras
 from app.alarms.alarm import AlarmManager
 from app.objects.manager import ObjectManager
 from app.logger import get_logger
@@ -24,8 +24,7 @@ class Application:
         logger.info("Initializing application")
         clear_streams()
 
-        # byt ut add cameras till find_cameras() för att skanna nätet efter kamerorna.
-        self.cameras = add_cameras()
+        self.cameras = find_cameras()
         self.map_manager = MapManager(self.cameras)
         self.alarm_manager = AlarmManager()
         self.object_manager = ObjectManager(self.map_manager, self.alarm_manager)

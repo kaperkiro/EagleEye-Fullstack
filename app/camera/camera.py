@@ -10,6 +10,7 @@ from ax_devil_device_api import Client, DeviceConfig
 from app.logger import get_logger
 
 logger = get_logger("CAMERA")
+CAM_TILT_OFFSET = 3  # degrees fine-tuning offset for tilt
 
 class Camera:
     """Represents a camera with configuration for geocoordinates and MQTT publishing.
@@ -44,12 +45,10 @@ class Camera:
 
     def configure_camera(
         self,
-        lat: float | None = None,
-        lon: float | None = None,
-        inst_height: float | None = None,
-        heading: float | None = None,
-        tilt: float | None = None,
-        roll: float | None = None,
+        lat: float,
+        lon: float,
+        inst_height: float,
+        heading: float,
     ) -> None:
         """Configure camera geocoordinates and orientation, defaulting to last settings.
 
@@ -62,36 +61,22 @@ class Camera:
             roll: Camera roll (degrees), defaults to last known roll.
         """
         with Client(self.config) as client:
-            # Use last settings if parameters are None
-            settings = self._last_settings
-            lat = lat if lat is not None else settings["latitude"]
-            lon = lon if lon is not None else settings["longitude"]
-            inst_height = inst_height if inst_height is not None else settings["installation_height"]
-            heading = heading if heading is not None else settings["heading"]
-            tilt = tilt if tilt is not None else settings["tilt"]
-            roll = roll if roll is not None else settings["roll"]
 
             # Apply settings
             client.geocoordinates.set_location(lat, lon)
+            client.geocoordinates.apply_settings() # automatically sets tilt and roll
+
+            # Retrieve last settings
+            last_settings = self.get_last_settings() # retrieve automatically set tilt
+            adjusted_tilt = last_settings["tilt"] + CAM_TILT_OFFSET
+            
             client.geocoordinates.set_orientation({
                 "heading": heading,
-                "tilt": tilt,
-                "roll": roll,
-                "installation_height": inst_height,
+                "tilt": adjusted_tilt,
+                "roll": 0, # roll doesnt work coorectly so we set it to 0
             })
+            logger.info(f"Configured camera {self.id} at {self.ip} with settings:\n\t\t\t| lat: {lat}, lng: {lon}, height: {inst_height}, heading: {heading}, tilt: {adjusted_tilt}, roll: {0}")
 
-            logger.info(f"Configured camera {self.id} at {self.ip} with settings:\n\t\t\t| lat: {lat}, lng: {lon}, height: {inst_height}, heading: {heading}, tilt: {tilt}, roll: {roll}")
-
-            # Update instance state
-            self.geocoordinates = (lat, lon)
-            self._last_settings = {
-                "latitude": lat,
-                "longitude": lon,
-                "installation_height": inst_height,
-                "heading": heading,
-                "tilt": tilt,
-                "roll": roll,
-            }
 
     def get_last_settings(self) -> Dict[str, float]:
         """Retrieve current camera settings from the device.

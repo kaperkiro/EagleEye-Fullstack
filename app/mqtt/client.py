@@ -86,8 +86,8 @@ class MqttClient:
             try:
                 self.client.connect(self.broker_host, self.broker_port, self.keepalive)
             except (ConnectionRefusedError, socket.error) as e:
-                logger.warning(f"MQTT connect failed ({e}), retrying in 5s…")
-                time.sleep(1)
+                logger.warning(f"MQTT connect failed ({e}), retrying in 3s…")
+                time.sleep(3)
             else:
                 logger.info(
                     f"Successfully connected to {self.broker_host}:{self.broker_port}"
