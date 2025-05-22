@@ -38,7 +38,6 @@ def send_mail():
             server.login(SENDER_EMAIL, APP_PASSWORD)
             server.send_message(msg)
 
-        print("✔ E-post skickad framgångsrikt!")
+        logger.info("E-post sent successfully!")
     except Exception as e:
         logger.error(f"SMTP error: {e}")
-        print(f"❌ Ett fel uppstod vid utskick: {e}")
