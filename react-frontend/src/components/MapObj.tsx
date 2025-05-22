@@ -3,24 +3,41 @@ import { useFloorPlan } from "./FloorPlanProvider";
 import "../css/MapObj.css";
 import cameraIcon from "../assets/camera.png"; // Ensure correct path
 
+/**
+ * Props for FloorPlanWithObjects component.
+ */
 interface FloorPlanWithObjectsProps {
   selectedId: number | null;
   onDotClick: (id: number, rtspUrls: string[]) => void;
 }
 
+/**
+ * Represents a single map object with position and associated camera IDs.
+ */
 interface MapObject {
+  /** Unique identifier for the object */
   id: number;
+  /** X coordinate as percentage of width (0-100) */
   x: number;
+  /** Y coordinate as percentage of height (0-100) */
   y: number;
+  /** List of camera stream IDs observing this object */
   cId: number[];
 }
 
+/**
+ * Represents a camera's position and orientation on the map.
+ */
 interface Camera {
   x: number;
   y: number;
   heading: number; // Heading in degrees
 }
 
+/**
+ * Fetches camera positions from the backend API.
+ * @returns A record mapping camera IDs to their position and orientation, or empty on error.
+ */
 async function getCameras() {
   try {
     const response = await fetch(`http://localhost:5001/api/camera_positions`);
@@ -36,6 +53,13 @@ async function getCameras() {
   }
 }
 
+/**
+ * Renders the floor plan with overlayed map objects and camera icons/cones.
+ * Polls backend APIs for dynamic object and camera data.
+ *
+ * @param selectedId - Currently selected object ID
+ * @param onDotClick - Handler for clicking on objects or cameras
+ */
 export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
   selectedId,
   onDotClick,
@@ -50,6 +74,10 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
     objects: Array<{ cid: number; x: number; y: number; id: number }>;
   }
 
+  /**
+   * Fetches moving objects from backend and updates state.
+   * Adjusts polling interval based on presence of objects.
+   */
   const fetchPositionData = async () => {
     try {
       const res = await fetch(`http://localhost:5001/api/objects`);
@@ -70,7 +98,7 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
       }));
       setObjects(mapped);
       // Adjust fetch interval based on objects presence
-      setFetchInterval(mapped.length > 0 ? 300 : 1000);
+      setFetchInterval(mapped.length > 0 ? 100 : 1000);
       if (mapped.length > 0) {
         console.log("Fetched objects:", mapped);
       } else {
@@ -114,7 +142,13 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
     console.log("Floor plan imageUrl:", imageUrl);
   }, [cameras, imageUrl]);
 
-  // Calculate POV cone points (isosceles triangle)
+  /**
+   * Calculates the vertex coordinates for a field-of-view cone polygon.
+   * @param x - Camera X position (0-100%)
+   * @param y - Camera Y position (0-100%)
+   * @param heading - Direction the camera is pointing (degrees)
+   * @returns A string of "x1,y1 x2,y2 x3,y3" for SVG polygon points
+   */
   const getConePoints = (x: number, y: number, heading: number) => {
     const radius = 20; // Cone length in % (adjust as needed)
     const fov = 90; // Field of view in degrees
@@ -159,7 +193,7 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
           }}
         />
       )}
-      {/* POV cones and camera icons */}
+      {/* Render camera cones */}
       <svg
         className="cameraCones"
         viewBox="0 0 100 100"
@@ -183,6 +217,7 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
           />
         ))}
       </svg>
+      {/* Render camera icons */}
       {Object.entries(cameras).map(([id, coords]) => (
         <img
           key={id}
@@ -201,7 +236,7 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
           }}
         />
       ))}
-      {/* Moving objects */}
+      {/* Render moving objects */}
       {objects.map((obj) => {
         const isSelected = obj.id === selectedId;
         return (
@@ -222,6 +257,7 @@ export const FloorPlanWithObjects: React.FC<FloorPlanWithObjectsProps> = ({
           />
         );
       })}
+      {/* Initial loading overlay */}
       {isLoading && (
         <div
           style={{

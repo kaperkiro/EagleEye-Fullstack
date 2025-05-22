@@ -5,6 +5,20 @@ interface WebRTCStreamProps {
   streamId: string;
 }
 
+/**
+ * Component that connects to a WebRTC-enabled RTSP stream via a signaling server,
+ * renders the incoming video tracks in a <video> element, and allows fullscreen toggling.
+ *
+ * Workflow:
+ * 1. Create RTCPeerConnection with a STUN server.
+ * 2. Fetch codec information and add appropriate transceivers.
+ * 3. Create and send an SDP offer, then set the remote SDP answer.
+ * 4. Handle incoming tracks and ICE connection state changes.
+ *
+ * Clicking the video container toggles fullscreen mode.
+ *
+ * @param streamId - Identifier of the desired stream to connect to.
+ */
 const WebRTCStream: React.FC<WebRTCStreamProps> = ({ streamId }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -12,6 +26,9 @@ const WebRTCStream: React.FC<WebRTCStreamProps> = ({ streamId }) => {
   const [status, setStatus] = useState<string>("Connecting...");
   const [active, setActive] = useState(false);
 
+  /**
+   * Effect to set up the WebRTC connection on mount and clean up on unmount.
+   */
   useEffect(() => {
     const baseUrl = "http://localhost:8083/stream";
 
@@ -25,21 +42,32 @@ const WebRTCStream: React.FC<WebRTCStreamProps> = ({ streamId }) => {
       videoRef.current.srcObject = stream;
     }
 
+    /**
+     * Handler for when a new media track arrives.
+     * Adds the track to the MediaStream and updates status.
+     */
     pc.ontrack = (event) => {
       console.log("Video track received");
       stream.addTrack(event.track);
       setStatus("Streaming");
     };
 
+    /**
+     * Handler for ICE connection state changes.
+     * Clears status on connected, otherwise displays the ICE state.
+     */
     pc.oniceconnectionstatechange = () => {
       console.log("ICE state:", pc.iceConnectionState);
-        if (pc.iceConnectionState === "connected") {
-          setStatus("");
-        } else {
-          setStatus(pc.iceConnectionState);
-        }
+      if (pc.iceConnectionState === "connected") {
+        setStatus("");
+      } else {
+        setStatus(pc.iceConnectionState);
+      }
     };
 
+    /**
+     * Fetch supported codecs from the server and add recvonly transceivers.
+     */
     const getCodecInfo = async () => {
       try {
         const response = await fetch(`${baseUrl}/codec/${streamId}`);
@@ -58,6 +86,10 @@ const WebRTCStream: React.FC<WebRTCStreamProps> = ({ streamId }) => {
       }
     };
 
+    /**
+     * Create and send an SDP offer, then set the remote SDP answer
+     * to finalize the WebRTC connection.
+     */
     const negotiate = async () => {
       try {
         if (pcRef.current?.signalingState === "closed") {
@@ -100,13 +132,16 @@ const WebRTCStream: React.FC<WebRTCStreamProps> = ({ streamId }) => {
       }
     };
 
+    /**
+     * Orchestrates fetching codec info and negotiating the connection.
+     */
     const start = async () => {
       await getCodecInfo();
       await negotiate();
     };
 
     start();
-
+    // Cleanup on unmount: close the connection if still open
     return () => {
       if (pcRef.current && pcRef.current.signalingState !== "closed") {
         pcRef.current.close();
@@ -114,7 +149,9 @@ const WebRTCStream: React.FC<WebRTCStreamProps> = ({ streamId }) => {
     };
   }, [streamId]);
 
-  // Toggle fullscreen and update active state
+  /**
+   * Toggle fullscreen mode for the video container and update state.
+   */
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
       containerRef.current
@@ -129,7 +166,9 @@ const WebRTCStream: React.FC<WebRTCStreamProps> = ({ streamId }) => {
     }
   };
 
-  // Keep `active` in sync if user presses Escape, etc.
+  /**
+   * Keeps `active` state in sync when exiting fullscreen via ESC or other means.
+   */
   useEffect(() => {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {

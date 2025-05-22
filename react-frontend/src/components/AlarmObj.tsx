@@ -25,7 +25,7 @@ export const FloorPlanStaticObjects: React.FC = () => {
     objects: Array<{ cid: number; x: number; y: number; id: number }>;
   }
 
-  //get objects positions:
+  //APi call to get objects positions:
   const fetchPositionData = async () => {
     try {
       const res = await fetch(`http://localhost:5001/api/objects`);
@@ -54,13 +54,12 @@ export const FloorPlanStaticObjects: React.FC = () => {
 
   useEffect(() => {
     /**
-     * Simulate polling data by refreshing the mock object list every 500ms.
-     * Replace with actual API call when integrating backend.
+     * Fetch positional data every 100 ms.
      */
     fetchPositionData();
     const interval = setInterval(() => {
       fetchPositionData();
-    }, 300);
+    }, 100);
     // Cleanup interval on component unmount to stop it from iterating.
     return () => clearInterval(interval);
   }, []);

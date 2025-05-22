@@ -27,7 +27,9 @@ export const LarmData = () => {
   // The starting point for a new zone.
   const [zoneStart, setZoneStart] = useState<Point | null>(null);
   // A draft zone drawn while moving the mouse. Note: Excludes the id.
-  const [draftZone, setDraftZone] = useState<Omit<AlarmZone, "id"> | null>(null);
+  const [draftZone, setDraftZone] = useState<Omit<AlarmZone, "id"> | null>(
+    null
+  );
   // List of finalized alarm zones that include their ID.
   const [alarms, setAlarms] = useState<AlarmZone[]>([]);
   // Track saving state for loading message
@@ -42,6 +44,9 @@ export const LarmData = () => {
 
   // Fetch existing alarm zones from the backend when the component mounts.
   useEffect(() => {
+    /*
+     *Fetches existing alarms from backend
+     */
     const initialFetch = async () => {
       try {
         await fetchAlarms();
@@ -58,7 +63,7 @@ export const LarmData = () => {
     return () => clearInterval(intervalId);
   }, [fetchInterval]); // Re-run when fetchInterval changes
 
-  // Play/pause alarm sound when any zone is triggered
+  // Play alarm sound when any zone is triggered
   useEffect(() => {
     const anyTriggered = alarms.some((zone) => zone.triggered);
     const audio = audioRef.current;
@@ -73,6 +78,9 @@ export const LarmData = () => {
   }, [alarms]);
 
   const fetchAlarms = async () => {
+    /*
+     * Fetches alarma data
+     */
     try {
       const res = await fetch(`${BACKEND_URL}/api/alarms`);
       if (!res.ok) {
@@ -85,7 +93,6 @@ export const LarmData = () => {
             alarm.id.startsWith("temp-")
           );
           const backendAlarms = data.alarms;
-          // Adjust fetch interval based on alarms presence
           setFetchInterval(backendAlarms.length > 0 ? 500 : 5000);
           if (backendAlarms.length > 0) {
             console.log("Fetched alarms:", backendAlarms);
@@ -100,6 +107,11 @@ export const LarmData = () => {
     }
   };
 
+  /**
+   * Handles clicks on map. Used for alarm functions.
+   *
+   * @param index
+   */
   const handleButtonClick = (index: number) => {
     setActiveIndex(index);
     if (index !== 0) {
@@ -108,12 +120,23 @@ export const LarmData = () => {
     }
   };
 
+  /**
+   * Calculates the zone of an alarm
+   *
+   * @param p1
+   * @param p2
+   * @returns
+   */
   const calculateAlarmZone = (p1: Point, p2: Point): Omit<AlarmZone, "id"> => {
     const topLeft = { x: Math.min(p1.x, p2.x), y: Math.min(p1.y, p2.y) };
     const bottomRight = { x: Math.max(p1.x, p2.x), y: Math.max(p1.y, p2.y) };
     return { topLeft, bottomRight, active: true, triggered: false };
   };
 
+  /**
+   * Changes the status för alarm
+   * @param id
+   */
   const changeAlarmStatus = (id: string) => {
     setIsLoading(true);
     fetch(`${BACKEND_URL}/api/alarms/status/${id}`, {
@@ -140,7 +163,7 @@ export const LarmData = () => {
     const tempId = `temp-${Date.now()}`;
     const optimisticAlarm: AlarmZone = { ...newAlarm, id: tempId };
     setAlarms((prev) => [...prev, optimisticAlarm]);
-    
+
     setIsLoading(true);
 
     fetch(`${BACKEND_URL}/api/alarms`, {
@@ -158,9 +181,7 @@ export const LarmData = () => {
       .then((data) => {
         if (data.alarm) {
           setAlarms((prev) =>
-            prev.map((alarm) =>
-              alarm.id === tempId ? data.alarm : alarm
-            )
+            prev.map((alarm) => (alarm.id === tempId ? data.alarm : alarm))
           );
           console.log("Saved new alarm zone:", data.alarm);
         }
@@ -174,6 +195,10 @@ export const LarmData = () => {
       });
   };
 
+  /**
+   * Handles removing of an alarm
+   * @param id
+   */
   const handleRemoveZone = (id: string) => {
     setIsLoading(true);
     fetch(`${BACKEND_URL}/api/alarms/${id}`, { method: "DELETE" })
@@ -189,6 +214,10 @@ export const LarmData = () => {
       .finally(() => setIsLoading(false));
   };
 
+  /**
+   *  Handle click on the floor plan to start or complete drawing a zone.
+   * @param e
+   */
   const handleMouseClick = (
     e: React.MouseEvent<HTMLDivElement, MouseEvent>
   ) => {
@@ -208,6 +237,9 @@ export const LarmData = () => {
     }
   };
 
+  /**
+   * Handle mouse movement to update draft zone dimensions while drawing.
+   */
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (activeIndexLB !== 0 || !zoneStart) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -217,6 +249,10 @@ export const LarmData = () => {
     };
     setDraftZone(calculateAlarmZone(zoneStart, point));
   };
+
+  /**
+   * Handle right-click (context menu) to cancel drawing mode.
+   */
 
   const handleContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
     if (activeIndexLB === 0 && zoneStart) {
@@ -344,10 +380,14 @@ export const LarmData = () => {
                 height: `${zone.bottomRight.y - zone.topLeft.y}%`,
                 position: "absolute",
               }}
-              >
+            >
               <span
                 style={{
-                  color: !zone.active ? "gray" : zone.triggered ? "red" : "green",
+                  color: !zone.active
+                    ? "gray"
+                    : zone.triggered
+                    ? "red"
+                    : "green",
                   fontWeight: "bold",
                   position: "absolute",
                   top: "50%",
@@ -355,7 +395,11 @@ export const LarmData = () => {
                   transform: "translate(-50%, -50%)",
                 }}
               >
-              {!zone.active ? "Inactive" : zone.triggered ? "Triggered" : "Active"}
+                {!zone.active
+                  ? "Inactive"
+                  : zone.triggered
+                  ? "Triggered"
+                  : "Active"}
               </span>
             </div>
           ))}

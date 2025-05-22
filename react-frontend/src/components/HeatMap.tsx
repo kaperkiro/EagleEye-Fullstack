@@ -14,6 +14,14 @@ interface FloorPlanWithHeatmapProps {
   colorStops?: { offset: number; color: string }[]; // Custom color gradient
 }
 
+/**
+ * Renders a floor plan image with a WebGL-based heatmap overlay.
+ * Initializes shaders, buffers, and handles resizing and drawing.
+ *
+ * @param points - Data points for the heatmap
+ * @param radius - Influence radius in pixels
+ * @param colorStops - Gradient stops for density coloring
+ */
 const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
   points,
   radius = 20,
@@ -31,12 +39,20 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
     { offset: 1.0, color: "rgba(255, 0, 0, 0.8)" }, // Bold red, opacity 0.8
   ],
 }) => {
+  /** Ref to the overlay canvas element */
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  /** URL of the floor plan image from context */
   const imageUrl = useFloorPlan();
+  /** Ref to the WebGL rendering context */
   const glRef = useRef<WebGLRenderingContext | null>(null);
+  /** Ref to the WebGL program */
   const programRef = useRef<WebGLProgram | null>(null);
+  /** Ref to the Float32Array buffer of points */
   const pointsBufferRef = useRef<Float32Array | null>(null);
 
+  /**
+   * Initializes WebGL, compiles shaders, sets up buffers, and handles draw on updates.
+   */
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -87,7 +103,9 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     };
 
-    // Resize canvas to match parent
+    /**
+     * Handles resizing of the canvas to match its parent container.
+     */
     const resizeCanvas = () => {
       const parent = canvas.parentElement;
       if (parent) {
@@ -241,7 +259,13 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
     };
   }, [points, radius, colorStops]);
 
-  // Helper: Compile shader
+  /**
+   * Compiles a GLSL shader of given type from source code.
+   * @param gl - WebGL rendering context
+   * @param source - Shader source code string
+   * @param type - gl.VERTEX_SHADER or gl.FRAGMENT_SHADER
+   * @returns Compiled shader or null on error
+   */
   const compileShader = (
     gl: WebGLRenderingContext,
     source: string,
@@ -259,7 +283,11 @@ const FloorPlanWithHeatmap: React.FC<FloorPlanWithHeatmapProps> = ({
     return shader;
   };
 
-  // Helper: Parse rgba color string
+  /**
+   * Parses an rgba() or rgb() CSS string into numeric components.
+   * @param color - CSS color string
+   * @returns Object with r, g, b [0-255] and a [0-1]
+   */
   const parseColor = (color: string) => {
     const match = color.match(
       /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/
@@ -348,6 +376,11 @@ export const HeatMapData: React.FC = () => {
   const [isInitialLoading, setIsInitialLoading] = useState(true); // Initial fetch loading
   const [fetchInterval, setFetchInterval] = useState(5000); // Dynamic fetch interval
 
+  /**
+   * Fetches heatmap data for the given timeframe in minutes.
+   * Adjusts polling rate based on whether data exists.
+   * @param minutes - Time window size for data
+   */
   const fetchHeatmap = async (minutes: number) => {
     try {
       const res = await fetch(`http://localhost:5001/api/heatmap/${minutes}`, {
@@ -355,7 +388,8 @@ export const HeatMapData: React.FC = () => {
         headers: { "Content-Type": "application/json" },
       });
       if (!res.ok) throw new Error(`Server responded ${res.status}`);
-      const data: { heatmap: Record<string, HeatmapPoint[]> } = await res.json();
+      const data: { heatmap: Record<string, HeatmapPoint[]> } =
+        await res.json();
       const map = data.heatmap;
       const firstKey = Object.keys(map)[0];
       const newPoints = map[firstKey] || [];
@@ -365,7 +399,9 @@ export const HeatMapData: React.FC = () => {
       if (newPoints.length > 0) {
         console.log("Fetched heatmap points:", newPoints);
       } else {
-        console.log("No heatmap points found, slowing fetch interval to 10000ms");
+        console.log(
+          "No heatmap points found, slowing fetch interval to 10000ms"
+        );
       }
     } catch (err) {
       console.error("Heatmap fetch error:", err);
@@ -392,6 +428,10 @@ export const HeatMapData: React.FC = () => {
     return () => clearInterval(intervalId);
   }, [activeIndexHM, fetchInterval]);
 
+  /**
+   * Handles timeframe selection and triggers data fetch.
+   * @param index - Selected timeframe index
+   */
   const handleButtonClick = (index: number) => {
     setActiveIndex(index);
     setIsLoading(true);

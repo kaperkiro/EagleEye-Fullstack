@@ -46,7 +46,7 @@
   justify-content: center;
   align-items: center;
   border: 0.35vh solid black;
-  width: 18vh;
+  width: 11vw;
   height: 6vh;
   font-size: 3vh;
   border-radius: 2.5vh;
@@ -76,7 +76,7 @@
   text-align: center; /* Ensures the text is centered within its container */
   color: inherit;
 }
-@media (max-width: 1000px) {
+@media (max-width: 1200px) {
   .buttonText {
     font-size: 15px;
   }
