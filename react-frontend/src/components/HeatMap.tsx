@@ -435,7 +435,9 @@ export const HeatMapData: React.FC = () => {
   const handleButtonClick = (index: number) => {
     setActiveIndex(index);
     setIsLoading(true);
-    fetchHeatmap([1, 3, 5, 10, 1440][index]).finally(() => setIsLoading(false));
+    fetchHeatmap([60, 360, 720, 1080, 1440][index]).finally(() =>
+      setIsLoading(false)
+    );
   };
 
   return (
