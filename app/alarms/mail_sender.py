@@ -4,13 +4,13 @@ from email.mime.multipart import MIMEMultipart
 from email.header import Header
 from email.utils import formataddr
 from app.logger import get_logger
+from app.config import RECEIVER_EMAIL
 
 logger = get_logger("ALARM")
 
 SENDER_EMAIL = "eagleeyelarm@gmail.com"
 SENDER_NAME = "EagleEye Alarm!"
 APP_PASSWORD = "iybxtpkptqdczuhc"
-RECEIVER_EMAIL = "kacper.orzel0531@gmail.com"
 RECEIVER_NAME = "Mottagarens Namn"
 SUBJECT = "ALARM!!!"
 BODY = "There is a thief in your store!!!"
