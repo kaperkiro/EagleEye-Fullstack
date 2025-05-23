@@ -79,9 +79,9 @@ class ObjectManager:
     @staticmethod
     def check_if_same_observation(obs1: dict, obs2: dict) -> bool:
         """Checks if two different observations are of the same object.
-        Same if geocoords are max 1.5 m apart and clothing colors match.
+        Same if geocoords are max 1 m apart and clothing colors match.
         """
-        max_distance = 0.5 # meters
+        max_distance = 1 # meters
 
         obs1_coords = obs1.get("geoposition", {})
         obs2_coords = obs2.get("geoposition", {})
