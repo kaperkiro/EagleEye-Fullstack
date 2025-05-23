@@ -105,120 +105,42 @@ class ObjectManager:
         union_area = area1 + area2 - intersection_area
 
         return intersection_area / union_area if union_area > 0 else 0.0
-    
+
     @staticmethod
-    def check_if_same_observation(obs1: Dict, obs2: Dict) -> bool:
-        """Check if two observations from different cameras represent the same object.
-
-        Compares timestamp, geoposition, class, colors (exact match), and bounding box (overlap).
-        Handles partial data by adjusting weights dynamically.
-
-        Args:
-            obs1: First observation dictionary (e.g., {"bounding_box": {...}, "timestamp": "..."}).
-            obs2: Second observation dictionary.
-
-        Returns:
-            bool: True if observations are likely the same object.
+    def check_if_same_observation(obs1: dict, obs2: dict) -> bool:
+        """Checks if two different observations are of the same object.
+        Same if geocoords are max 1.5 m apart and clothing colors match.
         """
-        # Configuration
-        THRESHOLD = 0.75  # Similarity score threshold
-        WEIGHTS = {
-            "timestamp": 0.25,  # Temporal proximity
-            "geoposition": 0.35,  # Most reliable when available
-            "class": 0.20,  # Object type
-            "colors": 0.15,  # Clothing colors (exact match)
-            "bounding_box": 0.05,  # Overlap-based
-        }
-        MAX_TIME_DELTA = 1.0  # Max time difference (seconds)
-        MAX_GEO_DISTANCE = 1.5  # Max geolocation distance (meters)
-        MIN_OVERLAP = 0.2  # Minimum overlap for bounding box match
+        max_distance = 1.5 # meters
 
-        score = 0.0
-        total_weight = 0.0
+        # # Get data from observations
+        # obs1_class = obs1.get("class", {})
+        # obs2_class = obs2.get("class", {})
 
-        # Timestamp comparison
-        try:
-            ts1 = ObjectManager.parse_timestamp(obs1.get("timestamp"))
-            ts2 = ObjectManager.parse_timestamp(obs2.get("timestamp"))
-            time_delta = abs((ts1 - ts2).total_seconds())
-            time_score = max(0.0, 1.0 - time_delta / MAX_TIME_DELTA)
-            score += WEIGHTS["timestamp"] * time_score
-            total_weight += WEIGHTS["timestamp"]
-        except Exception as e:
-            logger.debug(f"Timestamp comparison failed: {e}")
+        # if obs1_class.get("type") != obs2_class.get("type"):
+        #     return False
 
-        # Geoposition comparison
-        geo1 = obs1.get("geoposition", {})
-        geo2 = obs2.get("geoposition", {})
-        if (
-            geo1.get("latitude") is not None
-            and geo1.get("longitude") is not None
-            and geo2.get("latitude") is not None
-            and geo2.get("longitude") is not None
-        ):
-            try:
-                dist = geodesic(
-                    (geo1["latitude"], geo1["longitude"]),
-                    (geo2["latitude"], geo2["longitude"]),
-                ).meters
-                geo_score = max(0.0, 1.0 - dist / MAX_GEO_DISTANCE)
-                score += WEIGHTS["geoposition"] * geo_score
-                total_weight += WEIGHTS["geoposition"]
-            except Exception as e:
-                logger.warning(f"Geolocation comparison failed: {e}")
-        else:
-            logger.debug("Missing geoposition in one or both observations")
+        # # Safely access clothing colors
+        # obs1_upper = obs1_class.get("upper_clothing_colors", [{}])[0].get("name", "")
+        # obs2_upper = obs2_class.get("upper_clothing_colors", [{}])[0].get("name", "")
+        # obs1_lower = obs1_class.get("lower_clothing_colors", [{}])[0].get("name", "")
+        # obs2_lower = obs2_class.get("lower_clothing_colors", [{}])[0].get("name", "")
 
-        # Class comparison
-        class1 = obs1.get("class", {}).get("type")
-        class2 = obs2.get("class", {}).get("type")
-        if class1 and class2:
-            class_score = 1.0 if class1 == class2 else 0.0
-            score += WEIGHTS["class"] * class_score
-            total_weight += WEIGHTS["class"]
-        else:
-            logger.debug("Missing class in one or both observations")
+        # if obs1_upper != obs2_upper or obs1_lower != obs2_lower:
+        #     return False
 
-        # Color comparison (exact match)
-        color_score = 0.0
-        color_count = 0
-        for field in ["upper_clothing_colors", "lower_clothing_colors"]:
-            colors1 = obs1.get("class", {}).get(field, [])
-            colors2 = obs2.get("class", {}).get(field, [])
-            if colors1 and colors2:
-                name1 = colors1[0]["name"] if colors1 else ""
-                name2 = colors2[0]["name"] if colors2 else ""
-                similarity = 1.0 if name1.lower() == name2.lower() else 0.0
-                color_score += similarity
-                color_count += 1
-        if color_count > 0:
-            score += WEIGHTS["colors"] * (color_score / color_count)
-            total_weight += WEIGHTS["colors"]
-        else:
-            logger.debug("No matching colors available")
+        obs1_coords = obs1.get("geoposition", {})
+        obs2_coords = obs2.get("geoposition", {})
 
-        # Bounding box comparison (overlap)
-        bb1 = obs1.get("bounding_box")
-        bb2 = obs2.get("bounding_box")
-        if bb1 and bb2:
-            try:
-                overlap = ObjectManager.compute_overlap(bb1, bb2)
-                bb_score = 1.0 if overlap >= MIN_OVERLAP else 0.0
-                score += WEIGHTS["bounding_box"] * bb_score
-                total_weight += WEIGHTS["bounding_box"]
-            except Exception as e:
-                logger.warning(f"Bounding box comparison failed: {e}")
-        else:
-            logger.debug("Missing bounding box in one or both observations")
+        obs1_coords = (obs1_coords.get("latitude"), obs1_coords.get("longitude"))
+        obs2_coords = (obs2_coords.get("latitude"), obs2_coords.get("longitude"))
 
-        # Normalize score
-        final_score = score / total_weight if total_weight > 0 else 0.0
-        is_same = final_score >= THRESHOLD
-        logger.debug(
-            f"Observation comparison: score={final_score:.3f}, threshold={THRESHOLD}, same={is_same}"
-        )
-        return is_same
+        geodesic_distance = geodesic(obs1_coords, obs2_coords).meters
 
+        if geodesic_distance > max_distance:
+            return False
+
+        return True
 
     def _prune_history(self) -> None:
         """Remove archived objects older than 15 seconds."""

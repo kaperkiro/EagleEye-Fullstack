@@ -74,6 +74,7 @@ class Camera:
                 "heading": heading,
                 "tilt": adjusted_tilt,
                 "roll": 0, # roll doesnt work coorectly so we set it to 0
+                "installation_height": inst_height,
             })
             logger.info(f"Configured camera {self.id} at {self.ip} with settings:\n\t\t\t| lat: {lat}, lng: {lon}, height: {inst_height}, heading: {heading}, tilt: {adjusted_tilt}, roll: {0}")
 
