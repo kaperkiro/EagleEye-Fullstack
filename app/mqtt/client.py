@@ -59,16 +59,22 @@ class MqttClient:
         try:
             payload = json.loads(msg.payload.decode())
             observations = payload.get("frame", {}).get("observations", [])
-            camera_id = msg.topic.split("/")[
-                0
-            ]  # Extract camera ID from topic ("cam_id"/frame_metadata)
+
+            filtered_observations = []
+            for obs in observations:
+                ob_class = obs.get("class")
+                if ob_class is not None:
+                    if ob_class.get("score") > 0.85:
+                        filtered_observations.append(obs)
+
+            camera_id = msg.topic.split("/")[0]  # Extract camera ID from topic
 
             if not self.first_message_received:
                 logging.getLogger("MAIN").info("\x1b[32;20m" + "SYSTEM READY!")
                 self.first_message_received = True
 
             # Update global object tracking
-            self.object_manager.add_observations(camera_id, observations)
+            self.object_manager.add_observations(camera_id, filtered_observations)
 
         except (json.JSONDecodeError, ValueError) as e:
             logger.error(f"Error decoding JSON message: {e}")
