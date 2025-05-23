@@ -1,10 +1,11 @@
 import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog
+from tkinter import ttk, messagebox, simpledialog, filedialog
 from PIL import Image, ImageTk
 import json
 import math
 from geopy.distance import geodesic
 import os
+import shutil
 from app.logger import get_logger
 
 logger = get_logger("MAP CONFIG")
@@ -13,7 +14,8 @@ class MapConfigGUI:
     """Graphical interface for configuring geopositions on a floor plan map.
 
     Allows users to define a room by setting four corners, place cameras with
-    geocoordinates, and save the configuration to a JSON file.
+    geocoordinates, and save the configuration to a JSON file. If no floor plan
+    image exists, prompts the user to upload one and saves it to app/assets.
     """
 
     def __init__(self, floor_plan_path="../assets/floor_plan.png", output_path="map_config.json"):
@@ -36,11 +38,21 @@ class MapConfigGUI:
             self.root.iconphoto(False, self.icon)
         except FileNotFoundError:
             logger.error("Icon file not found. Using default icon.")
-            
 
         # Set file paths
+        self.assets_dir = os.path.join(os.path.dirname(__file__), "..", "assets")
         self.floor_plan_path = os.path.join(os.path.dirname(__file__), floor_plan_path)
         self.output_path = os.path.join(os.path.dirname(__file__), output_path)
+
+        # Check if floor plan exists; if not, prompt for upload
+        if not os.path.exists(self.floor_plan_path):
+            logger.info(f"Floor plan image {self.floor_plan_path} not found. Prompting for upload.")
+            if not self.upload_floor_plan():
+                logger.error("No valid floor plan selected. Exiting.")
+                messagebox.showerror("Error", "No valid floor plan image selected. Exiting.")
+                self.root.quit()
+                self.root.destroy()
+                return
 
         # Room configuration state
         self.corners = []  # Pixel coordinates of room corners
@@ -161,6 +173,58 @@ class MapConfigGUI:
         self.load_floor_plan()
         self.root.mainloop()
 
+    def upload_floor_plan(self) -> bool:
+        """Prompt the user to upload a floor plan image and save it to assets directory.
+
+        Returns:
+            bool: True if a valid image is uploaded and saved, False otherwise.
+        """
+        # Ensure assets directory exists
+        try:
+            os.makedirs(self.assets_dir, exist_ok=True)
+            logger.info(f"Ensured assets directory exists: {self.assets_dir}")
+        except Exception as e:
+            logger.error(f"Failed to create assets directory: {e}")
+            return False
+
+        # Open file dialog for image selection
+        file_types = [("Image files", "*.png *.jpg *.jpeg"), ("All files", "*.*")]
+        file_path = filedialog.askopenfilename(
+            title="Select Floor Plan Image",
+            filetypes=file_types,
+            parent=self.root
+        )
+
+        if not file_path:
+            logger.info("No file selected in file dialog.")
+            return False
+
+        # Validate the selected file is an image
+        try:
+            with Image.open(file_path) as img:
+                img.verify()  # Verify it's a valid image
+                img_format = img.format.lower()
+                if img_format not in ["png", "jpeg", "jpg"]:
+                    logger.error(f"Unsupported image format: {img_format}")
+                    messagebox.showerror("Error", "Please select a PNG or JPEG image.")
+                    return False
+        except Exception as e:
+            logger.error(f"Invalid image file: {e}")
+            messagebox.showerror("Error", "Selected file is not a valid image.")
+            return False
+
+        # Copy the file to assets directory
+        try:
+            dest_file_name = "floor_plan.png"  # Standard name for consistency
+            self.floor_plan_path = os.path.join(self.assets_dir, dest_file_name)
+            shutil.copy(file_path, self.floor_plan_path)
+            logger.info(f"Floor plan image copied to {self.floor_plan_path}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to copy floor plan image: {e}")
+            messagebox.showerror("Error", f"Failed to save floor plan image: {e}")
+            return False
+
     def reset_all(self):
         """Reset all configurations and restart the GUI."""
         # Clear canvas and destroy window
@@ -202,8 +266,14 @@ class MapConfigGUI:
             self.image_size = (new_width, new_height)
             self.image_offset = (x_offset, y_offset)
             self.draw_grid()
+            logger.info(f"Floor plan loaded: {self.floor_plan_path}")
         except FileNotFoundError:
+            logger.error(f"Floor plan image not found: {self.floor_plan_path}")
             messagebox.showerror("Error", f"Floor plan image {self.floor_plan_path} not found")
+            self.root.quit()
+        except Exception as e:
+            logger.error(f"Failed to load floor plan image: {e}")
+            messagebox.showerror("Error", f"Failed to load floor plan image: {e}")
             self.root.quit()
 
     def draw_grid(self):
@@ -560,7 +630,6 @@ class MapConfigGUI:
             y (float): Y-coordinate in image pixels.
         """
         if not hasattr(self, "current_camera"):
-            # messagebox.showerror("Error", "Please set camera details first")
             return
 
         tl = self.corners[0]
