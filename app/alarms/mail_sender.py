@@ -4,14 +4,14 @@ from email.mime.multipart import MIMEMultipart
 from email.header import Header
 from email.utils import formataddr
 from app.logger import get_logger
-from app.config import RECEIVER_EMAIL
 
 logger = get_logger("ALARM")
 
 SENDER_EMAIL = "eagleeyelarm@gmail.com"
 SENDER_NAME = "EagleEye Alarm!"
 APP_PASSWORD = "iybxtpkptqdczuhc"
-RECEIVER_NAME = "Mottagarens Namn"
+RECEIVER_NAME = "reciever name"
+RECEIVER_EMAIL = "youremailhere"
 SUBJECT = "ALARM!!!"
 BODY = "There is a thief in your store!!!"
 
@@ -38,6 +38,6 @@ def send_mail():
             server.login(SENDER_EMAIL, APP_PASSWORD)
             server.send_message(msg)
 
-        logger.info("E-post sent successfully!")
+        logger.info("E-mail sent successfully!")
     except Exception as e:
         logger.error(f"SMTP error: {e}")
