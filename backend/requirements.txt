@@ -13,3 +13,4 @@ netifaces
 scapy
 mac_vendor_lookup
 geopy
+dotenv
