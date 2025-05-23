@@ -1,19 +1,30 @@
+import os
+from dotenv import load_dotenv
+from pathlib import Path
+
+env_path = Path(__file__).resolve().parents[3] / ".env"
+load_dotenv(dotenv_path=env_path)
+
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.header import Header
 from email.utils import formataddr
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".."))
 from app.logger import get_logger
 
 logger = get_logger("ALARM")
 
-SENDER_EMAIL = "eagleeyelarm@gmail.com"
-SENDER_NAME = "EagleEye Alarm!"
-APP_PASSWORD = "iybxtpkptqdczuhc"
-RECEIVER_NAME = "reciever name"
-RECEIVER_EMAIL = "youremailhere"
-SUBJECT = "ALARM!!!"
-BODY = "There is a thief in your store!!!"
+
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", "")
+SENDER_NAME = os.getenv("SENDER_NAME", "")
+APP_PASSWORD = os.getenv("APP_PASSWORD", "")
+RECEIVER_NAME = os.getenv("RECEIVER_NAME", "")
+RECEIVER_EMAIL = os.getenv("RECEIVER_EMAIL", "")
+SUBJECT = os.getenv("SUBJECT", "")
+BODY = os.getenv("BODY", "")
 
 
 def send_mail():

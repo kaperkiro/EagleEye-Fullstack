@@ -158,3 +158,67 @@ thumb
 sketch
 
 # End of https://www.toptal.com/developers/gitignore/api/react,node
+
+# Python-specific
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+*.venv/
+
+# Logs and temporary files
+*.log
+*.log.*
+*.tmp
+*.bak
+
+# Database files
+*.db
+*.sqlite3
+database.db  # Your specific SQLite database
+
+# Video frame storage
+frames/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Dependency management
+Pipfile.lock
+requirements.txt.lock
+
+# Configuration files
+*.json
+
+# Miscellaneous
+*.swp
+*.swo
+*.out
+*.csv
+*.jl
+core
+frames
+test
+hls/
+
+# Keep the following files in the repository
+!logo_no_text.png
