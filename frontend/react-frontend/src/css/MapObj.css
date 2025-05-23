@@ -1,0 +1,49 @@
+.ObjmapDiv {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.ObjmapDiv img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.mapButton {
+  position: absolute;
+  width: 1.7vh;
+  height: 1.7vh;
+  border-radius: 50%;
+  border: 2px solid black;
+  cursor: pointer;
+  transition: left 0.3s linear, top 0.3s linear;
+  transform: translate(-50%, -50%);
+}
+
+.cameraIcon {
+  position: absolute;
+  width: 4%;
+  height: 4%;
+  border-radius: 35px;
+  border: solid 2px black;
+  z-index: 1;
+}
+
+.cameraCones {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.blueDots {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}

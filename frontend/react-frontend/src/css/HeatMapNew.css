@@ -1,0 +1,64 @@
+/* src/css/HeatMap.css */
+
+/* Sidebar styles */
+.heatLeftSidebar {
+  border-right: solid;
+  width: 24.8vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.heatMapTitle {
+  margin-bottom: 5vh;
+  margin-top: -2vh;
+  color: #1a202c;
+  opacity: 75%;
+  font-size: 40px;
+}
+
+.heatMapButton {
+  background-color: white;
+  border: solid black;
+  width: 12vw;
+  height: 6.5vh;
+  margin-bottom: 2vh;
+  font-size: 24px;
+  border-radius: 2.5vh;
+}
+
+.heatMapButton:hover {
+  background-color: #bab8c6;
+  color: #1a202c;
+}
+
+.heatMapButton.active {
+  background-color: #3b82f6;
+  color: white;
+}
+
+/* Map styles (aligned with LiveView.css and MapObj.css) */
+.liveViewDiv {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+}
+
+.liveMapDiv {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ObjmapDiv {
+  position: relative;
+  flex: 1;
+}
+
+.ObjmapDiv img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* Match LiveView's default scaling */
+}

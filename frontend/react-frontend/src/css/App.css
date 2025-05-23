@@ -1,0 +1,88 @@
+/* New Styles for App.tsx */
+.app-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+  flex-direction: column;
+  margin: 0;
+}
+
+.app-header {
+  border-bottom: 0.3vh solid;
+  display: flex;
+  background-color: #ffffff;
+  padding: 2vh;
+  text-align: center;
+  align-items: center;
+}
+
+.app-logo {
+  width: 10vh;
+  height: 10vh;
+}
+
+/* Adjust layout for the button container */
+.button-container {
+  display: flex;
+  background-color: #ffffff;
+  text-align: center;
+  align-items: center;
+  flex-direction: row;
+  /* Instead of individual margin-left, we use gap.
+     The first button will have a little less gap if needed using first-child */
+  gap: 1vh;
+  margin-left: 12vh;
+}
+.title-container {
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  width: 17vw;
+}
+
+.toggle-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 0.35vh solid black;
+  width: 11vw;
+  height: 6vh;
+  font-size: 3vh;
+  border-radius: 2.5vh;
+  background-color: white;
+  color: black;
+}
+
+/* Set custom margin for buttons as in the original inline styles */
+.button-container button:first-child {
+  margin-left: 5vh;
+}
+.button-container button:not(:first-child) {
+  margin-left: 8vh;
+}
+.toggle-button:hover {
+  background-color: #bab8c6;
+  color: #1a202c;
+}
+/* Active button styling */
+.toggle-button.active {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.buttonText {
+  font-size: 25px;
+  text-align: center; /* Ensures the text is centered within its container */
+  color: inherit;
+}
+@media (max-width: 1200px) {
+  .buttonText {
+    font-size: 15px;
+  }
+}
+
+.title {
+  font-size: 35px;
+  text-align: center;
+}
