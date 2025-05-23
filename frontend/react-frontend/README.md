@@ -1,60 +1,92 @@
-# React + TypeScript + Vite
+# EagleEye Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is the React + TypeScript frontend for the EagleEye project. It provides a live view of camera streams, historical heatmaps, and alarm zone management, all visualized on a dynamic floor plan.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Live View:** See real-time camera streams and tracked objects on the floor plan.
+- **Historical Heatmap:** Visualize historical movement data as a heatmap overlay.
+- **Alarms:** Define, activate/deactivate, and remove alarm zones on the floor plan. Get notified with sound when a zone is triggered.
 
-## Expanding the ESLint configuration
+## Project Structure
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-});
+```
+src/
+  App.tsx                # Main application entry
+  main.tsx               # React root rendering
+  components/            # React components (LiveView, HeatMap, Alarms, etc.)
+  assets/                # Images and audio assets
+  css/                   # CSS files for styling
+public/
+  vite.svg               # Public assets
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Getting Started
 
-```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
+### Prerequisites
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    "react-x": reactX,
-    "react-dom": reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs["recommended-typescript"].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-});
+- Node.js (v18+ recommended)
+- npm
+
+### Installation
+
+1. Clone the repository and navigate to the frontend directory:
+   ```sh
+   cd EagleEye-Fullstack/frontend/react-frontend
+   ```
+2. Install dependencies:
+   ```sh
+   npm install
+   ```
+
+### Running the Development Server
+
+Start the frontend in development mode with hot reloading:
+
+```sh
+npm run dev
 ```
 
-How to run locally:
+The app will be available at [http://localhost:5173](http://localhost:5173) by default.
 
-1. cd into the react-frontend directory
-2. if first time running run "npm install"
-3. Run "npm run dev"
+### Building for Production
+
+To build the frontend for production:
+
+```sh
+npm run build
+```
+
+### Linting
+
+To check code quality with ESLint:
+
+```sh
+npm run lint
+```
+
+### Preview Production Build
+
+To preview the production build locally:
+
+```sh
+npm run preview
+```
+
+## Configuration
+
+- The frontend expects the backend API to be running at `http://localhost:5001`.
+- WebRTC video streams are expected from `http://localhost:8083/stream`.
+
+## Customization
+
+- Floor plan images and camera icons are in `src/assets/`.
+- CSS styles can be modified in `src/css/`.
+
+## License
+
+This project is for educational purposes.
+
+---
+
+_For backend setup and more details, see the main project README._
