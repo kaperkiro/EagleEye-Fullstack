@@ -81,12 +81,13 @@ You can run the entire system using the provided orchestration script (`run.py`)
 
   This script starts the backend (Flask server) and the frontend development server (using Vite) concurrently.
 
-  - **Or try docker:**
+  - **Docker:**
 
   ```bash
   docker-compose up --build
 
   ```
+  This should run it however it is untested... 
 
 - **Running Separately:**
 
